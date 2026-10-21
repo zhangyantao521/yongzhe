@@ -1,0 +1,16 @@
+level=1 enemies=7
+map-ui canvas=1 cssW=132 bufW=132
+map empty-bg rgba=6,10,19,199 (期望 alpha 120~210 的半透明深色)
+map hero-dot rgba=255,216,138,255 (期望金色 255,216,138)
+map blips=4 (期望 4)
+map slime  rgba=255,107,107,255 (期望红 255,107,107)
+map stone  rgba=255,159,67,255 (期望橙 255,159,67)
+map archer rgba=255,209,102,255 (期望黄 255,209,102)
+map elite  rgba=192,132,252,255 (期望紫 192,132,252)
+map mapping acc=ok (2.4,-8.6 应落在像素内)
+map dead-hidden alpha=165 (期望 < 200，仅剩底盘)
+map target-ring=ok (期望 3 米处目标有金环)
+map shrines=3/3 (期望全部画出青点)
+map outside-clip alpha=0 (期望 0，圆形裁剪生效)
+check=ok
+errors=none

@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>碎境勇者 · 游戏设计文档 v1.4</title>
+<style>
+  :root {
+    --paper: #faf8f2;
+    --paper-2: #f2eee3;
+    --ink: #22281f;
+    --ink-2: #4a5147;
+    --muted: #7c8276;
+    --line: #ddd6c4;
+    --green: #2c5f45;
+    --green-soft: #e6efe8;
+    --amber: #a96a1b;
+    --amber-soft: #f7edda;
+    --red: #9c3f34;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+    font-size: 15px; line-height: 1.85; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 56px 32px 96px; }
+
+  header.cover { border-bottom: 2px solid var(--ink); padding-bottom: 28px; margin-bottom: 44px; }
+  .kicker { font-size: 12px; letter-spacing: 4px; color: var(--amber); margin-bottom: 14px; }
+  h1 {
+    font-family: "Songti SC", "Noto Serif SC", "SimSun", serif;
+    font-size: 46px; letter-spacing: 6px; margin: 0 0 10px; font-weight: 700; line-height: 1.2;
+  }
+  .sub { font-size: 15px; color: var(--ink-2); letter-spacing: 1px; margin: 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+  .chip {
+    font-size: 12px; letter-spacing: 1px; color: var(--green);
+    background: var(--green-soft); border: 1px solid #cfdcd2; padding: 3px 10px;
+  }
+
+  section { margin-bottom: 52px; }
+  h2 {
+    font-family: "Songti SC", "Noto Serif SC", serif;
+    font-size: 22px; letter-spacing: 2px; font-weight: 700;
+    margin: 0 0 8px; padding-left: 14px; border-left: 4px solid var(--green);
+  }
+  h2 .no { color: var(--muted); font-size: 13px; letter-spacing: 2px; margin-right: 10px; font-family: "Courier New", monospace; }
+  h3 { font-size: 15px; letter-spacing: 1px; margin: 26px 0 8px; color: var(--green); }
+  p { margin: 10px 0; color: var(--ink-2); }
+  strong { color: var(--ink); font-weight: 600; }
+  em { font-style: normal; background: linear-gradient(transparent 62%, #f4dfb6 62%); color: var(--ink); }
+
+  .lede {
+    font-family: "Songti SC", "Noto Serif SC", serif;
+    font-size: 19px; line-height: 1.9; color: var(--ink); margin: 16px 0 24px;
+  }
+
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 20px 0; }
+  .card { background: #fff; border: 1px solid var(--line); padding: 16px 16px 14px; }
+  .card .n { font-family: "Courier New", monospace; font-size: 11px; color: var(--amber); letter-spacing: 2px; }
+  .card .t { font-size: 15px; font-weight: 600; margin: 6px 0 6px; color: var(--ink); }
+  .card .d { font-size: 13px; line-height: 1.7; color: var(--muted); }
+
+  table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 13.5px; background: #fff; }
+  th, td { border: 1px solid var(--line); padding: 9px 12px; text-align: left; vertical-align: top; }
+  th { background: var(--paper-2); font-weight: 600; font-size: 12.5px; letter-spacing: 0.5px; color: var(--ink); }
+  td.num { font-family: "Courier New", monospace; text-align: right; }
+  tbody tr:nth-child(even) td { background: #fdfbf6; }
+
+  blockquote {
+    margin: 22px 0; padding: 14px 20px; background: var(--amber-soft);
+    border-left: 3px solid var(--amber); color: #6b4a15; font-size: 14px; line-height: 1.8;
+  }
+  blockquote em { background: none; color: #6b4a15; font-weight: 600; }
+
+  ul, ol { margin: 10px 0; padding-left: 22px; color: var(--ink-2); }
+  li { margin: 5px 0; }
+
+  .kv { display: grid; grid-template-columns: 132px 1fr; gap: 0; border-top: 1px solid var(--line); margin: 16px 0; }
+  .kv > div { padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+  .kv .k { color: var(--muted); letter-spacing: 1px; }
+
+  .status { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 1px dashed var(--line); font-size: 14px; }
+  .tag { flex: none; font-size: 11px; letter-spacing: 1px; padding: 2px 8px; margin-top: 5px; }
+  .tag.done { background: var(--green); color: #fff; }
+  .tag.todo { background: #e8e3d5; color: #6b6a60; }
+
+  footer { border-top: 1px solid var(--line); padding-top: 18px; font-size: 12.5px; color: var(--muted); letter-spacing: 1px; }
+
+  @media (max-width: 720px) {
+    .cards { grid-template-columns: 1fr; }
+    h1 { font-size: 34px; }
+    .wrap { padding: 36px 20px 64px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="cover">
+  <div class="kicker">GAME DESIGN DOCUMENT · v1.4</div>
+  <h1>碎境勇者</h1>
+  <p class="sub">Shattered Realm — 三维像素 / 动作冒险 / 大陆探索</p>
+  <div class="meta">
+    <span class="chip">PC · 手柄优先</span>
+    <span class="chip">单机 · 12–15 小时</span>
+    <span class="chip">低分辨率 3D 渲染</span>
+    <span class="chip">1 人小队可做的规模</span>
+  </div>
+</header>
+
+<section>
+  <h2><span class="no">01</span>一句话与三根支柱</h2>
+  <p class="lede">一个只有两个脑袋高的体素勇者，在一片不断碎裂的悬空大陆上，用三种武器形态和一次完美弹反，把怪物的破防条撬开。</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="n">PILLAR 01</div>
+      <div class="t">读招，而不是堆数值</div>
+      <div class="d">每场战斗的紧张感来自"我认出了他要出什么招"。敌人起手统一 0.45–0.65 秒前摇，配合体色变红，给玩家可读的信号。</div>
+    </div>
+    <div class="card">
+      <div class="n">PILLAR 02</div>
+      <div class="t">形态即战术</div>
+      <div class="d">剑打节奏、斧打结构、枪打距离。三把武器共享同一条破防条，所以它们互相配合，而不是互相替代。</div>
+    </div>
+    <div class="card">
+      <div class="n">PILLAR 03</div>
+      <div class="t">会下沉的大陆</div>
+      <div class="d">裂片停留过久会开始坠落。探索被时间推着走，玩家必须在"多搜一个巢"和"活着离开"之间做选择。</div>
+    </div>
+  </div>
+
+  <p>选题理由：三维像素是目前独立团队性价比最高的差异化美术——体素建模成本低、无贴图管线、光照与阴影天然出效果，同时"低分辨率"本身就能掩盖资产精度不足。玩法上避开开放世界，用<em>小而密的裂片</em>换取密度而非面积。</p>
+</section>
+
+<section>
+  <h2><span class="no">02</span>世界观：崩响之后</h2>
+  <p>大陆"厄兰"在一次被称为<strong>崩响</strong>的事件中裂成数百块浮空残片。每块残片都被冻结在崩塌前一瞬的地貌里——所以你会在同一片区域里看到春天的花和秋天的落叶同时存在。</p>
+  <p>玩家是<strong>提灯者</strong>，身上带着唯一还能工作的"锚"：一根能把人钉在裂片上的青铜桩。当裂片之间的引力错位时，只有锚能让提灯者跨过裂痕。</p>
+  <p><strong>侵蚀体</strong>是裂片自我修补时排出的残渣，它们本能地想把一切"修回原样"——包括把活人碾成建材。这就是敌人存在的理由，也是它们死后留下"碎晶"的原因。</p>
+  <blockquote>叙事的表达方式是环境，不是过场动画：一块裂片里出现的建筑残骸、被冻结在半空的雨、墙上重复的同一幅壁画，都在说明"这里曾经完整过"。</blockquote>
+</section>
+
+<section>
+  <h2><span class="no">03</span>核心循环</h2>
+  <div class="kv">
+    <div class="k">30 秒</div><div>穿过一段有垂直落差的地形，识别一处侵蚀巢（有音效与地面裂纹提示）。</div>
+    <div class="k">45 秒</div><div>遭遇战：读招 → 弹反 / 翻滚 → 重击堆破防 → 破防窗口内爆发。</div>
+    <div class="k">15 秒</div><div>收取碎晶与"裂片记忆"，决定继续深入还是回锚点。</div>
+    <div class="k">3 分钟</div><div>回到锚点，花碎晶点亮一个烙印节点，解锁一段新的位移能力或武器招式。</div>
+  </div>
+  <p>关键设计：<strong>敌人不刷新</strong>。这让"清空一片区域"成为真实成就，也避免玩家在原地刷资源，把节奏锁在推进上。碎晶的主要来源是巢穴与裂片事件，而非击杀数。</p>
+</section>
+
+<section>
+  <h2><span class="no">04</span>战斗系统</h2>
+
+  <h3>三层资源</h3>
+  <ul>
+    <li><strong>生命</strong>：100 点。不自动回复，只能靠锚点或消耗品。归零后回到最近锚点，敌人已击杀的状态保留。</li>
+    <li><strong>体力</strong>：100 点，停手 0.55 秒后以 26/秒 回复。所有进攻与防御都吃体力，它才是真正的节奏刹车。</li>
+    <li><strong>破防条</strong>：挂在敌人身上。满值即进入 2.2 秒硬直，期间受到<strong>双倍伤害</strong>。这是战斗的唯一"得分方式"。</li>
+  </ul>
+  <p class="note">v1.1 起移除了怒气系统：大招不再靠资源攒满释放，而是改为格斗游戏式的<strong>指令技</strong>（见下文）。删掉一层资源后，战斗决策全部回到"读招、站位、出刀"三件事上。</p>
+
+  <h3>动作集合</h3>
+  <table>
+    <thead><tr><th style="width:130px">动作</th><th>行为</th><th style="width:120px">手感参数</th></tr></thead>
+    <tbody>
+      <tr><td>轻击连段</td><td>三段，第三段提高伤害与破防倍率（×1.6）。<strong>具体动作由武器决定</strong>，见下表</td><td>命中停顿 45ms，震动 0.22</td></tr>
+      <tr><td>重击</td><td>长蓄力后带前冲的终结一击，破防效率最高，可打断敌人轻攻击</td><td>前摇 46–54% 时长，停顿 75ms</td></tr>
+      <tr><td>指令技</td><td>方向序列 + 攻击键释放，每把武器 7 式（见专表）</td><td>顿帧 50–100ms，终极技慢放 0.35 倍</td></tr>
+      <tr><td>闪避翻滚</td><td>16 体力。<strong>有方向输入</strong>：朝输入方向前滚翻，位移约 4 米；<strong>无输入</strong>：后撤步，位移约 2.7 米</td><td>无敌帧 0.34 / 0.24 秒</td></tr>
+      <tr><td>格挡</td><td>减伤 86%，持续扣体力；体力归零则被击溃硬直 1.1 秒</td><td>—</td></tr>
+      <tr><td>完美弹反</td><td>按下格挡后 <strong>0.22 秒内</strong>被命中：不受伤害，周围 4.2 米敌人破防条直接拉满</td><td>触发 0.28 倍慢放 0.45 秒</td></tr>
+    </tbody>
+  </table>
+
+  <h3>三种武器形态（按 Q 即时切换，无冷却）</h3>
+  <table>
+    <thead><tr><th style="width:110px">形态</th><th>连段伤害</th><th>范围 / 扇形</th><th>重击</th><th>定位</th></tr></thead>
+    <tbody>
+      <tr><td><strong>裂空剑</strong></td><td class="num">9 / 9 / 17</td><td>2.05 / 79°</td><td class="num">26 伤 · 26 破防</td><td>均衡型，连段顺滑，适合第一次接触</td></tr>
+      <tr><td><strong>碎岩斧</strong></td><td class="num">14 / 14 / 24</td><td>1.85 / 101°</td><td class="num">38 伤 · 42 破防</td><td>破防核心，起手慢，靠弹反创造窗口</td></tr>
+      <tr><td><strong>逐风枪</strong></td><td class="num">8 / 8 / 13</td><td>2.95 / 40°</td><td class="num">22 伤 · 18 破防</td><td>安全距离，扇形窄，奖励精准站位</td></tr>
+    </tbody>
+  </table>
+  <p>切换没有冷却，但每次切换会清空连段计数——所以"打两下剑、换斧补一记重击"是有效的，而"无缝乱切"并不能无限刷伤害。这条规则把三把武器从"三个按钮"变成"三段节奏"。</p>
+
+  <h3>每把武器的动作设计</h3>
+  <p>三把武器不是同一套挥砍换了数值，而是三套独立的关节关键帧。摆动轴、出手方向、身体重心全部不同，玩家闭着眼也能靠动作认出武器。</p>
+  <table>
+    <thead><tr><th style="width:100px">武器</th><th>一段</th><th>二段</th><th>三段（终结技）</th><th>重击</th></tr></thead>
+    <tbody>
+      <tr><td><strong>裂空剑</strong></td><td>右→左<strong>横斩</strong>，扭腰带动</td><td>左→右横斩，反向回摆</td><td>上撩过顶后斜劈，带小幅前冲</td><td>蓄力大回旋横斩，前冲 1.05 米</td></tr>
+      <tr><td><strong>碎岩斧</strong></td><td>双手过顶<strong>竖劈</strong>，落点在身前</td><td>双手过顶竖劈，节奏更沉</td><td>斜向压劈，落点偏外侧</td><td>长蓄力后砸地，身体前倾 26°</td></tr>
+      <tr><td><strong>逐风枪</strong></td><td>回抽 → 直线<strong>突刺</strong>，枪身前送 0.78 米</td><td>回抽 → 突刺，出手更快</td><td>上步长突刺，前送 1.0 米</td><td>深蓄力直线突刺，前冲 1.75 米</td></tr>
+    </tbody>
+  </table>
+  <p>动作系统用<strong>关节关键帧</strong>驱动：每个动作是一串 <code>{进度, 关节角度}</code>，字段覆盖右臂三轴、左臂、上身俯仰/扭腰、整体前倾、手臂前后位移、武器前后位移、离地高度。命中判定与关键帧对齐（<code>hitAt</code>），所以"看到打到"就是"真的打到"。挥击窗口会沿武器方向生成短命高光，连成<strong>挥砍拖影</strong>——在 384×216 的渲染分辨率下，这是让人看清高速动作的关键。</p>
+
+  <h3>指令技系统</h3>
+  <p>每把武器有 <strong>7 式指令技</strong>，用方向序列 + 攻击键释放：窗口 <strong>0.8 秒</strong>内依次输入方向（WASD 或方向键），再点左键（轻）或右键（重）。输入序列实时显示在左上角 HUD，命中时高亮技能名——玩家不需要背表， UI 就是表。</p>
+  <table>
+    <thead><tr><th style="width:90px">指令</th><th>裂空剑</th><th>碎岩斧</th><th>逐风枪</th></tr></thead>
+    <tbody>
+      <tr><td><strong>↑↑ + 轻</strong></td><td>破空三连斩 · 前冲 4 米三段横斩</td><td>狂蛮冲撞 · 前冲两段过顶劈</td><td>疾风三刺 · 前冲三段突刺</td></tr>
+      <tr><td><strong>↑↓ + 轻</strong></td><td>回燕斩 · 旋身两周剑气环</td><td>旋风斧舞 · 旋身两周双劈</td><td>回马枪 · 后撤反手突刺</td></tr>
+      <tr><td><strong>↓↑ + 轻</strong></td><td>升龙剑 · 上撩挑飞</td><td>裂地波 · 跳砸 + 地面推进波</td><td>出海蛟龙 · 压枪上挑风刃</td></tr>
+      <tr><td><strong>↑↑ + 重</strong></td><td>惊雷刺 · 5.4 米突进贯穿</td><td>崩山冲锋 · 6.4 米冲锋双劈</td><td>惊雷贯穿 · 8 米超距贯穿刺</td></tr>
+      <tr><td><strong>↓↓ + 重</strong></td><td>劈山剑 · 跳劈 + 地裂冲击</td><td>天崩地裂 · 高跳砸 + 双冲击环</td><td>破军扫 · 满月横扫两段</td></tr>
+      <tr><td><strong>空格↑ + 轻</strong></td><td>瞬影斩 · 闪避瞬身斩</td><td>瞬影砸 · 闪避接跳砸</td><td>瞬影刺 · 闪避突刺</td></tr>
+      <tr><td><strong>空格↓↓ + 重</strong></td><td><strong>万剑归宗</strong> ★终极</td><td><strong>陨石天降</strong> ★终极</td><td><strong>横扫千军</strong> ★终极</td></tr>
+    </tbody>
+  </table>
+  <table>
+    <thead><tr><th style="width:120px">终极技</th><th>演出</th><th style="width:120px">伤害 / 破防</th><th style="width:100px">时长 / 范围</th></tr></thead>
+    <tbody>
+      <tr><td><strong>万剑归宗</strong></td><td>举剑朝天，14 道剑气从身周径向射出，双层冲击环扩散，0.35 倍慢放</td><td class="num">60 / 55</td><td>1.85s / 6.8m</td></tr>
+      <tr><td><strong>陨石天降</strong></td><td>跃起 1.7 米，砸地触发金色冲击波与地裂，击退翻倍</td><td class="num">88 / 80</td><td>1.75s / 5.2m</td></tr>
+      <tr><td><strong>横扫千军</strong></td><td>旋身两周，枪身横扫 5 段，每段都叠破防，风压残影柱绕身</td><td class="num">28×5 / 24×5</td><td>1.65s / 5.2m</td></tr>
+    </tbody>
+  </table>
+  <p>三条设计原则：<strong>① 武器性格决定动作语法</strong>——剑多段轻盈、斧只有两段但每段沉重、枪全是单点穿透加超长位移，所以同一套指令在三把武器上打出完全不同的节奏。<strong>② 突进技走胶囊判定</strong>——前冲类技能记录"起点→当前位置"线段做命中检测，冲过敌人不会 miss，一路上全都扫到。<strong>③ 终极技是指令的终点而非资源的起点</strong>——不需要攒任何条，任何玩家在任何一个安静瞬间都能放出来，但放之前依然要读场上局势。</p>
+  <p><strong>④ 释放瞬间自动锁怪</strong>——搓招的方向键会带动角色转身，玩家经常在"输入方向"和"敌人方向"之间被撕开，技能放空。释放指令技的瞬间，角色强制转向 <strong>15 米内最近的存活敌人</strong>（多目标取最近，无目标则保持当前朝向），并在目标脚下亮起一个金环作为锁定反馈。普通攻击不受影响，保持原有的转向手感。</p>
+
+  <h3>闪避的战术价值</h3>
+  <p>闪避不是"躲完继续打"，它本身就是进攻选择。两条独立机制：</p>
+  <table>
+    <thead><tr><th style="width:130px">机制</th><th>触发</th><th style="width:230px">回报</th></tr></thead>
+    <tbody>
+      <tr><td><strong>完美闪避</strong></td><td>翻滚起手 <strong>0.16 秒内</strong>被攻击锁定（敌我前摇对上的瞬间）</td><td>0.3 倍慢放 0.3 秒 · 体力 +25 · <strong>1.5 秒反击窗口</strong>（下次攻击与技能 ×1.6 伤、×1.5 破防）</td></tr>
+      <tr><td><strong>穿袭</strong></td><td>翻滚途中切过敌人（1.25 米 + 身位）</td><td>固定伤害 10 + 关卡×2 · 体力 +8 · 敌人直接进入硬直</td></tr>
+    </tbody>
+  </table>
+  <p>设计意图：把"回避"从成本中心变成收益中心。完美闪避的窗口比完美弹反（0.22 秒）更短但更容易预判——玩家读的是敌人的起手，不是自己的帧表，所以它是弹之外的第二条进攻线。</p>
+
+  <h3>敌人节拍表（首章）</h3>
+  <table>
+    <thead><tr><th style="width:120px">敌人</th><th>生命 / 破防</th><th>行为</th><th style="width:200px">教学目的</th></tr></thead>
+    <tbody>
+      <tr><td>苔原史莱姆</td><td class="num">42 / 60</td><td>跳跃逼近，短前摇撞击</td><td>教会轻击连段与距离感</td></tr>
+      <tr><td>裂境守卫</td><td class="num">160 / 120</td><td>慢速挥击，被弹反后长硬直</td><td>教会弹反与破防窗口</td></tr>
+      <tr><td>裂境弩手</td><td class="num">34 / 45</td><td>保持 6.5–10.5 米射击带，太近后撤，发射可闪避的弹道</td><td>教会换枪与侧向翻滚</td></tr>
+      <tr><td>裂境统领</td><td class="num">300 / 170</td><td>大范围震击，每 8.5 秒召唤 2 只史莱姆</td><td>教会优先级处理与 AoE 大招</td></tr>
+      <tr><td>境主 · 拾荒巨像</td><td class="num">600 / 200×3</td><td>三阶段，每阶段换一套破防条</td><td>把三种武器串成一整场</td></tr>
+    </tbody>
+  </table>
+
+  <h3>敌人协同：包围而不是堆怪</h3>
+  <ul>
+    <li><strong>攻击令牌</strong>：同时允许出手的敌人上限为 <code>1 + min(3, ⌊关卡/2⌋)</code>。抢不到令牌的敌人不发呆，而是绕到侧翼游走，等前排收招再补位——玩家看到的是一圈伺机而动的包围网，而不是全部贴脸。</li>
+    <li><strong>收招惩罚</strong>：玩家挥空（whiff）或重击后摇期间，全队提速 65% 压上。这是对"乱按"最直接的反馈。</li>
+    <li><strong>包抄走位</strong>：近战在攻击距离 1.45 倍处环绕玩家，每 1.1–2.5 秒换一次方向，不会永远从同一个角度切入。</li>
+    <li><strong>远程独立节奏</strong>：弩手走自己的射击带逻辑，不受令牌限制（上限放宽到 +1），保证远程压力持续存在。</li>
+  </ul>
+
+  <h3>关卡推进与难度曲线</h3>
+  <p>每净化一块裂片就前往下一块，无限推进。难度按四条曲线爬升：</p>
+  <table>
+    <thead><tr><th style="width:90px">关卡</th><th>史莱姆</th><th>守卫</th><th>弩手</th><th>统领</th><th>生命倍率</th><th>伤害倍率</th><th>速度倍率</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td class="num">7</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">×1.00</td><td class="num">×1.00</td><td class="num">×1.00</td></tr>
+      <tr><td>2</td><td class="num">9</td><td class="num">1</td><td class="num">0</td><td class="num">0</td><td class="num">×1.20</td><td class="num">×1.10</td><td class="num">×1.05</td></tr>
+      <tr><td>3</td><td class="num">11</td><td class="num">2</td><td class="num">1</td><td class="num">0</td><td class="num">×1.40</td><td class="num">×1.20</td><td class="num">×1.09</td></tr>
+      <tr><td>4</td><td class="num">13</td><td class="num">2</td><td class="num">2</td><td class="num">1</td><td class="num">×1.60</td><td class="num">×1.30</td><td class="num">×1.14</td></tr>
+      <tr><td>6</td><td class="num">17</td><td class="num">3</td><td class="num">4</td><td class="num">1</td><td class="num">×2.00</td><td class="num">×1.50</td><td class="num">×1.23</td></tr>
+      <tr><td>10+</td><td class="num">17</td><td class="num">4</td><td class="num">5</td><td class="num">2</td><td class="num">×2.80</td><td class="num">×1.90</td><td class="num">×1.41</td></tr>
+    </tbody>
+  </table>
+  <p>过关补给是<strong>部分恢复</strong>而不是满血：生命 +45、体力回满。压力随关卡累积，逼玩家把锚点治疗和掉落物纳入路线规划。裂片名称按 <code>苔原 → 风蚀 → 黯晶 → 熔核 → 虚空</code> 轮换，第 10 片之后进入"深处 N"，给无限进度一个可读的坐标。</p>
+
+  <h3>掉落与计分</h3>
+  <ul>
+    <li><strong>露珠</strong>（生命 +24）与<strong>真气</strong>（体力 +40）：统领必掉 1 个，守卫 40%，其他 16%。生命已满时露珠自动转化为真气，不浪费。</li>
+    <li><strong>计分</strong>：史莱姆 15 / 弩手 30 / 守卫 40 / 统领 150。分数只进不退，是给反复重开玩家的一個外部目标。</li>
+    <li><strong>结算面板</strong>：过关时展示本关击杀、用时、累计分数、累计击杀、倒下次数。</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="no">05</span>探索结构</h2>
+  <p>每块裂片是一张 <strong>40–60 米</strong> 的独立地图，穿行时间设计在 40–70 秒。不做无缝大世界，因为那会让内容密度被稀释，也会把美术成本推到小团队撑不住的位置。</p>
+  <ul>
+    <li><strong>锚点</strong>：每片 1 个，兼作存档、治疗与快速移动。点亮需要先清掉附近的巢。</li>
+    <li><strong>垂直性</strong>：地形按 0.5 米体素台阶抬升，玩家永远能看到"上面还有一层"，解锁二段跳后可以回访旧裂片开辟新路径。</li>
+    <li><strong>下沉事件</strong>：进入裂片 6 分钟后开始抖动，9 分钟后强制坠落。造成的不是死亡，而是"抢不到的东西"——这比扣血更有压力。</li>
+    <li><strong>可选挑战</strong>：无伤巢穴、限时裂片、静默路线（不惊动任何敌人）。奖励是烙印点而非数值装备。</li>
+  </ul>
+  <blockquote>设计原则：<em>每一块裂片都必须有一个一眼能记住的轮廓</em>。玩家回忆起地图时，应该记得"那座斜着的塔"，而不是"那片森林"。</blockquote>
+</section>
+
+<section>
+  <h2><span class="no">06</span>成长：烙印树</h2>
+  <p>不做装备数值成长，做<strong>动词扩展</strong>。三条分支，共 18 个节点，全部是"多一个选择"而不是"多 10 点攻击"。</p>
+  <div class="kv">
+    <div class="k">剑术支</div><div>延长弹反窗口（0.22→0.28 秒）、连段第三段附加破防、完美弹反后 1 秒内重击不耗体力。</div>
+    <div class="k">体术支</div><div>翻滚距离 +25%、格挡体力消耗减半、二段跳、空中翻滚。</div>
+    <div class="k">碎境支</div><div>滑翔、锚点弹射（把自己钉到远处岩壁）、裂片坠落时短暂悬停、看穿巢穴位置。</div>
+  </div>
+  <p>所有节点都需要 1 个"裂片记忆"，记忆只能通过探索与挑战获得。这样"探索"和"变强"是同一件事。</p>
+</section>
+
+<section>
+  <h2><span class="no">07</span>美术与技术规格</h2>
+  <h3>三维像素是怎么做出来的</h3>
+  <p>不是"低多边形"，而是<strong>低分辨率 + 体素形体</strong>的组合：几何全部由方块搭建，材质是无贴图的硬边 Lambert，最终画面渲染到 <strong>384×216</strong> 的缓冲，再用最近邻放大铺满屏幕。像素颗粒来自渲染分辨率，不来自贴图，所以相机推近时不会有"贴图糊掉"的问题。</p>
+  <div class="kv">
+    <div class="k">渲染分辨率</div><div>384 × 216（16:9），最近邻放大，关闭抗锯齿与 mipmap</div>
+    <div class="k">阴影</div><div>单方向光 + 1024² 阴影贴图覆盖 54 米（约 19 像素/米），阴影边缘本身就是像素块</div>
+    <div class="k">色板</div><div>冷绿地表 / 暖棕土 / 青色晶体 / 洋红警示，四组，共 22 色，禁止渐变</div>
+    <div class="k">角色比例</div><div>头身比 1 : 2.4，武器夸张到身体长度的 1.6 倍（低分辨率下靠轮廓识别）</div>
+    <div class="k">动画</div><div>渲染 60fps，动画按 12fps 采样；一次轻击只有 3 个关键姿态</div>
+    <div class="k">镜头</div><div>固定倾角 37° 跟随，抖动量 0.22 / 0.42，受击顿帧 45–75ms</div>
+  </div>
+
+  <h3>可读性底线</h3>
+  <p>低分辨率最大的坑是"看不清"。三条硬规则：敌人轮廓色永远比地表亮 2 级；起手必变色（红）；玩家角色永远有暖色披风作为定位锚点。UI 用 HTML 层叠渲染，不参与像素化，保证中文可读。</p>
+
+  <h3>移动端触屏适配</h3>
+  <p>同一份构建同时跑桌面与手机：触屏设备自动加载虚拟输入层，键鼠玩家无感。移动操作用左下<strong>虚拟摇杆</strong>——360° 模拟量拨动，倾斜越满跑得越快；指令技的搓招在触屏上<strong>不缩水</strong>——摇杆越过死区时按主轴方向（上/下/左/右）向同一条指令缓冲入队，与键盘 keydown 完全同路，回中再拨即可搓出 ↑↑ / ↑↓ / ↓↑ / ↓↓。</p>
+  <div class="kv">
+    <div class="k">布局</div><div>左下虚拟摇杆（模拟量移动 + 四象限搓招，环上四向刻度搓招时高亮），右下动作键：轻击 / 重击 / 闪避 / 格挡 / 换武 / 治疗；竖屏显示旋转提示，建议横屏</div>
+    <div class="k">摇杆量化</div><div>死区 30%；取主轴方向入队（斜拨也归到上下左右），连续同向不重复计数，回中再拨才算第二次输入；单拨一次 + 攻击 = 普通攻击，不误触技能</div>
+    <div class="k">终极技</div><div>␣↓↓ + 右键 → 闪避键 + ↓↓ + 重击（HUD 提示随端切换文案）</div>
+    <div class="k">输入链路</div><div>摇杆象限切换 = pushDir（与键盘同源）；动作键 = tryAttack / doDodge / startGuard / swapWeapon / tryHeal；moveDir 摇杆优先，moveScale 输出模拟量速度</div>
+    <div class="k">防误触</div><div>touch-action:none + 全局 touchmove/gesturestart/dblclick 拦截，禁下拉刷新与双指缩放；按钮与摇杆各自只跟踪一个触点，支持多指同按（摇杆按住 + 连点攻击）</div>
+    <div class="k">适配细节</div><div>viewport-fit=cover + env(safe-area-inset) 避让刘海/小黑条；窄屏 HUD 与摇杆缩放；全屏按钮；iOS AudioContext 手势内创建并 resume；失焦自动松开摇杆</div>
+    <div class="k">性能</div><div>384×216 渲染缓冲 + 像素比 1，触屏 GPU 负载与桌面一致；逻辑帧与渲染帧解耦（dt 截断 0.05s）</div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="no">08</span>内容规模</h2>
+  <table>
+    <thead><tr><th>阶段</th><th>内容</th><th>时长</th><th>验证目标</th></tr></thead>
+    <tbody>
+      <tr><td>垂直切片</td><td>1 裂片 · 3 敌人 · 1 境主</td><td class="num">15 分钟</td><td>手感与美术方向是否成立</td></tr>
+      <tr><td>首章</td><td>4 裂片 · 6 敌人 · 1 境主</td><td class="num">3 小时</td><td>循环是否耐玩、教学是否顺</td></tr>
+      <tr><td>完整版</td><td>3 章 · 12 裂片 · 4 境主</td><td class="num">12–15 小时</td><td>—</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="no">09</span>当前原型状态</h2>
+  <div class="status"><span class="tag done">已实现</span><span>384×216 低分辨率渲染管线、体素地形生成、37° 跟随镜头、硬阴影</span></div>
+  <div class="status"><span class="tag done">已实现</span><span>三套独立动作：剑横扫 / 斧劈砍 / 枪突刺（各 3 段轻击 + 1 重击）、挥砍拖影、关节关键帧系统</span></div>
+  <div class="status"><span class="tag done">已实现</span><span>闪避重做：有方向输入做绕髋前滚翻（带位置补偿），无输入做后撤步；攻击后半段可用闪避取消</span></div>
+  <div class="status"><span class="tag done">已实现</span><span>指令技系统：每武器 7 式（方向序列 + 攻击键），HUD 实时显示输入序列与预匹配技能名；释放瞬间自动锁怪（15 米内最近敌人，目标脚下金环反馈），普攻不受影响</span></div>
+  <div class="status"><span class="tag done">已实现</span><span>三系终极技：万剑归宗（剑气 radial 射击 + 双层冲击环）/ 陨石天降（1.7 米跳砸 + 地裂）/ 横扫千军（旋身两周五段 + 风压柱）</span></div>
+  <div class="status"><span class="tag done">已实现</span><span>技能特效：飞行剑气波、推进冲击环、地裂列、风压残影柱；技能命中配顿帧 50–100ms、震屏与终极慢放</span></div>
+  <div class="status"><span class="tag done">已实现</span><span>格挡 / 完美弹反（含慢放）、破防条、破防双倍伤害、击退与粒子、命中顿帧</span></div>
+  <div class="status"><span class="tag done">已实现</span><span>敌人 AI（巡守 / 追击 / 起手 / 收招）、锚点治疗、净化目标、通关判定</span></div>
+  <div class="status"><span class="tag done">已实现</span><span>关卡推进：无限裂片、难度四曲线、过关结算面板、部分补给；第 2 裂片起出守卫、第 3 起出弩手、第 4 起出统领</span></div>
+  <div class="status"><span class="tag done">已实现</span><span>敌人协同：攻击令牌限制同时出手、侧翼包抄走位、收招惩罚（挥空/重击后摇全队提速）</span></div>
+  <div class="status"><span class="tag done">已实现</span><span>裂境弩手（弹道 + 射击带走位）与裂境统领（震击 + 每 8.5 秒召唤）</span></div>
+  <div class="status"><span class="tag done">已实现</span><span>完美闪避（慢放 + 反击窗口 ×1.6）与穿袭（翻滚切人造成伤害并回体力）</span></div>
+  <div class="status"><span class="tag done">已实现</span><span>掉落物（露珠/真气）与计分系统，HUD 显示关卡、剩余敌人与分数</span></div>
+  <div class="status"><span class="tag done">已实现</span><span>移动端触屏：左下虚拟摇杆（360° 模拟量移动 + 四象限搓招量化，死区 30%）+ 六动作键，与键鼠共用同一输入链路；竖屏旋转提示、安全区避让、全屏按钮、iOS 音频手势恢复、失焦自动松摇杆</span></div>
+  <div class="status"><span class="tag todo">待开发</span><span>裂片间的传送与地图层、下沉事件、滑翔与锚点弹射</span></div>
+  <div class="status"><span class="tag todo">待开发</span><span>烙印树 UI 与存档、境主多阶段战、音效与配乐</span></div>
+  <div class="status"><span class="tag todo">待开发</span><span>手柄支持、难度选项（弹反窗口 0.22 / 0.3 / 关闭）</span></div>
+</section>
+
+<section>
+  <h2><span class="no">10</span>风险与验证点</h2>
+  <table>
+    <thead><tr><th style="width:170px">风险</th><th>表现</th><th style="width:200px">对策</th></tr></thead>
+    <tbody>
+      <tr><td>低分辨率下目标识别困难</td><td>玩家找不到敌人或被围攻时无法判断优先级</td><td>轮廓色阶 + 起手变色 + 屏幕外敌人指示</td></tr>
+      <tr><td>三武器学习成本过高</td><td>玩家只用剑，其余两把沦为摆设</td><td>用敌人结构强制（守卫必须靠斧破防，悬丝者必须靠枪够到）</td></tr>
+      <tr><td>弹反手感依赖输入延迟</td><td>0.22 秒窗口在 60ms 延迟下变成 0.16 秒</td><td>垂直切片先测手感；预留"输入缓冲 0.1 秒"</td></tr>
+      <tr><td>体素地形手工成本</td><td>每块裂片地形制作 3–5 天</td><td>模块化地形块 + 程序化生成 + 手工修饰</td></tr>
+      <tr><td>多段技能被击退打断</td><td>多段技能前几段把敌人推出后续判定范围</td><td>多段技能单独压击退（0.06–0.4）；单发技能保持 0.75–1.0</td></tr>
+      <tr><td>突进技冲过敌人导致 miss</td><td>惊雷刺前冲 5.4 米，敌人在 2.2 米时被穿过，扇形判定丢失</td><td>前冲类技能改用「起点→当前位置」胶囊判定（实测修复，18 项数值全绿）</td></tr>
+      <tr><td>搓招转向导致技能放空</td><td>输入 ↑↑ 时角色朝屏幕上方转身，敌人在侧面或背后，方向技打空</td><td>释放瞬间自动锁怪：强制转向 15 米内最近敌人，目标脚下金环反馈（实测修复，背对/侧对/多目标 7 项全绿）</td></tr>
+      <tr><td>指令技误触</td><td>移动中的方向输入被累积成指令，玩家普攻时莫名放技能</td><td>输入窗口压到 0.8 秒、同方向不重复计数（keydown 非 repeat / 十字键按下一次才入队）</td></tr>
+      <tr><td>触屏搓招精度</td><td>摇杆快速拨动（↑↑）时第二击落在窗口外，或斜拨被量化丢方向</td><td>0.8 秒窗口对快速回拨绰绰有余；死区 30% 防抖， quadrant 切换才入队，单拨不误触普攻</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<footer>
+  碎境勇者 · 设计文档 v1.4 · 与可玩原型 index.html 同步<br>
+  文档中的数值均为当前原型实测值，可直接调参验证。
+</footer>
+
+</div>
+</body>
+</html>
