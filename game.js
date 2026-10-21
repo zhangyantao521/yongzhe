@@ -12,6 +12,13 @@
 
   /* ------------------------- 关卡进度 ------------------------- */
   const REGION_NAMES = ['苔原裂片', '风蚀裂片', '黯晶裂片', '熔核裂片', '虚空裂片'];
+  const MAX_LEVEL = 30;   // 可选关的最高层数
+  // 难度档：叠加在关卡倍率之上（敌人血量 / 伤害 / 速度）
+  const DIFFS = [
+    { name: '轻松', hp: 0.75, dmg: 0.60, spd: 0.90 },
+    { name: '普通', hp: 1.00, dmg: 1.00, spd: 1.00 },
+    { name: '困难', hp: 1.35, dmg: 1.50, spd: 1.12 }
+  ];
   const ENEMY_LABEL = { slime: '苔原史莱姆', stone: '裂境守卫', archer: '裂境弩手', elite: '裂境统领', boss: '碎境魔将' };
   let level = 1;
   let score = 0;
@@ -23,9 +30,19 @@
   let attackTokens = 2;   // 同时允许攻击的敌人上限（群体协同）
   let shots = [];         // 弩手弹道
   let orbs = [];          // 掉落物
+  // 难度与角色属性（设置模块在文件末尾加载，启动时回填；此处必须先声明，
+  // 因为 spawnWave 在设置模块之前就会执行一次，不能引用设置模块的 let）
+  let DIFF_IDX = 1;       // 难度索引 0 轻松 / 1 普通 / 2 困难
+  let ATK_MUL = 1;        // 攻击力倍率（100% = 原值）
 
   /* ------------------------- 缓动 ------------------------- */
   function clamp01(v) { return v < 0 ? 0 : (v > 1 ? 1 : v); }
+  // 整数夹取：设置项（生命上限 / 难度 / 层数）越界时回落到默认值
+  function clampInt(v, lo, hi, dflt) {
+    const n = Math.round(Number(v));
+    if (isNaN(n)) return dflt;
+    return n < lo ? lo : (n > hi ? hi : n);
+  }
   function seg(p, a, b) { return clamp01((p - a) / (b - a)); }
   function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
   function easeIn(t) { return t * t * t; }
@@ -1430,6 +1447,13 @@
 
   function spawnWave(cfg) {
     let guard = 0;
+    // 难度倍率叠加在关卡倍率之上（轻松：敌人更脆更弱；困难：更凶更快）
+    const d = DIFFS[DIFF_IDX] || DIFFS[1];
+    cfg = {
+      name: cfg.name, slime: cfg.slime, stone: cfg.stone, archer: cfg.archer,
+      elite: cfg.elite, boss: cfg.boss,
+      hpMul: cfg.hpMul * d.hp, dmgMul: cfg.dmgMul * d.dmg, spdMul: cfg.spdMul * d.spd
+    };
     const put = function (type, n) {
       let placed = 0;
       while (placed < n && guard++ < 1200) {
@@ -2196,6 +2220,7 @@
 
   if (stickEl) {
     stickEl.addEventListener('touchstart', function (e) {
+      if (layoutEditing) return;   // 编辑布局时不拦截手势，交由拖拽逻辑处理
       e.preventDefault();
       if (stick.active) return;
       const t = e.changedTouches[0];
@@ -2380,7 +2405,7 @@
     const W = WEAPONS[hero.weapon];
     const lv = 1 + (level - 1) * 0.12;
     const counter = hero.counterT > 0;
-    const dmg = h.dmg * lv * (counter ? 1.6 : 1);
+    const dmg = h.dmg * lv * (counter ? 1.6 : 1) * ATK_MUL;
     const brk = h.brk * lv * (counter ? 1.5 : 1);
     const full = h.arc >= 6.28;
     const dash = !!(sk && sk.moves && sk.moves.some(function (m) { return Math.abs(m.dist) > 1.5; }));
@@ -2564,6 +2589,7 @@
     const arc = isHeavy ? W.arc * 1.12 : W.arc;
     const counter = hero.counterT > 0;   // 完美闪避后的反击窗口
     let dmg = isHeavy ? W.heavy.dmg : W.dmg[hero.comboStep];
+    dmg *= ATK_MUL;
     let brk = isHeavy ? W.heavy.brk : 10 * W.breakMul * (hero.comboStep === 2 ? 1.6 : 1);
     if (counter) { dmg *= 1.6; brk *= 1.5; }
     let hitAny = false;
@@ -2848,7 +2874,7 @@
         if (e.dead || e.dashedId === hero.dodgeId) continue;
         if (Math.hypot(e.pos.x - hero.pos.x, e.pos.z - hero.pos.z) < 1.25 + e.radius) {
           e.dashedId = hero.dodgeId;
-          const dmg = 10 + level * 2;
+          const dmg = Math.round((10 + level * 2) * ATK_MUL);
           e.hp -= dmg;
           e.hitFlash = 0.16;
           e.breakv = Math.min(e.maxBreak, e.breakv + 8);
@@ -3335,6 +3361,11 @@
     let dt = Math.min(0.05, clock.getDelta());
 
     if (!running) {
+      // 暂停态也要推进 toast 计时，否则提示语会永久盖在画面中央
+      if (toastTimer > 0) {
+        toastTimer -= dt || 0.016;
+        if (toastTimer <= 0) ui.toast.classList.remove('on');
+      }
       Music.update(dt || 0.016);
       updateCamera(dt || 0.016);
       renderer.render(scene, camera);
@@ -3378,6 +3409,7 @@
   function levelClear() {
     running = false;
     const cfg = levelCfg(level);
+    markUnlocked(level);   // 抵达记录：下一层解锁
     ui.winScreen.classList.remove('hide');
     ui.winLogo.innerHTML = '第 ' + level + ' 裂片已净化<small>' + cfg.name + ' · SHARD PURIFIED</small>';
     ui.winText.innerHTML =
@@ -3395,10 +3427,11 @@
     clearField();
     spawnWave(cfg);
     levelKills = 0; levelTime = 0;
-    ui.region.textContent = '碎境大陆 · ' + cfg.name;
+    ui.region.textContent = regionText(cfg);
     ui.levelNum.textContent = level;
     ui.killCount.textContent = enemiesLeft();
     // 过关补给：部分回血 + 满体力
+    applyHeroStats(false);
     hero.hp = Math.min(hero.maxHp, hero.hp + 45);
     hero.st = hero.maxSt;
     hero.pos.set(0, groundH(0, 2), 2);
@@ -3424,10 +3457,24 @@
       camera.position.set(hero.pos.x, hero.pos.y + CAM_OFF.y, hero.pos.z + CAM_OFF.z);
       loop();
     }
+    // 选关：直接进入所选层数（清掉初始化时生成的第 1 层波次，按所选层重刷）
+    level = clampInt(SET.startLevel, 1, MAX_LEVEL, 1);
+    const cfg = levelCfg(level);
+    clearField();
+    spawnWave(cfg);
+    levelKills = 0; levelTime = 0;
+    ui.region.textContent = regionText(cfg);
+    ui.levelNum.textContent = level;
+    ui.killCount.textContent = enemiesLeft();
+    applyHeroStats(false);
+    hero.hp = hero.maxHp; hero.st = hero.maxSt;
+    hero.state = 'idle'; hero.stateT = 0; hero.dead = false; hero.deadT = 0;
+    hero.comboStep = 0; hero.comboExpire = 0; hero.counterT = 0; hero.whiffT = 0;
+    hero.pos.set(0, groundH(0, 2), 2);
     running = true;
     clock.getDelta();
     renderQBar();   // 进入游戏后按已保存的快捷栏渲染
-    toast('第 1 裂片 · 击败全部侵蚀体', 2.4);
+    toast('第 ' + level + ' 裂片 · ' + cfg.name + ' · 难度 ' + diffNow().name, 2.4);
   }
 
   function resetGame() {
@@ -3436,9 +3483,10 @@
     clearField();
     spawnWave(cfg);
     levelKills = 0; levelTime = 0;
-    ui.region.textContent = '碎境大陆 · ' + cfg.name;
+    ui.region.textContent = regionText(cfg);
     ui.levelNum.textContent = level;
     ui.killCount.textContent = enemiesLeft();
+    applyHeroStats(false);
     hero.hp = hero.maxHp; hero.st = hero.maxSt;
     hero.pos.set(0, groundH(0, 2), 2);
     hero.state = 'idle'; hero.stateT = 0; hero.comboStep = 0; hero.dead = false; hero.deadT = 0;
@@ -3521,6 +3569,16 @@
     },
     mmShrines: function () {
       return shrines.map(function (r) { return { x: +r.x.toFixed(2), z: +r.z.toFixed(2) }; });
+    },
+    // 敌人属性清单（难度倍率验证用）
+    enemyStats: function () {
+      const out = [];
+      for (let i = 0; i < enemies.length; i++) {
+        const e = enemies[i];
+        if (e.dead) continue;
+        out.push({ type: e.type, hp: e.hp, maxHp: e.maxHp, dmg: e.dmg, speed: +e.speed.toFixed(3) });
+      }
+      return out;
     },
     skills: function () { return SKILLS[hero.weapon].map(function (s) { return s.name; }); },
     // 音频联调钩子
@@ -3652,7 +3710,22 @@
     setLayout: function (o) { if (o.leftHand != null) SET.leftHand = !!o.leftHand; if (o.stick) SET.layout.stick = o.stick; if (o.abtns) SET.layout.abtns = o.abtns; applyLayout(); saveSettings(); },
     getLayout: function () { return JSON.parse(JSON.stringify({ leftHand: SET.leftHand, layout: SET.layout })); },
     fireQuick: fireQuick,
-    setEditing: function (v) { editing = !!v; },
+    setEditing: function (v) { editing = !!v; layoutEditing = !!v; },
+    enterLayoutEdit: enterLayoutEdit,
+    exitLayoutEdit: exitLayoutEdit,
+    isLayoutEdit: function () { return layoutEditMode; },
+    isRunning: function () { return !!running; },
+    isStarted: function () { return !!started; },
+    /* 选关 / 难度 / 角色属性 */
+    setDifficulty: applyDifficulty,
+    getDifficulty: function () { return { idx: DIFF_IDX, name: diffNow().name, cfg: diffNow() }; },
+    setMaxHp: applyMaxHp,
+    setMaxSt: applyMaxSt,
+    setAtk: applyAtk,
+    getStats: function () { return { maxHp: hero.maxHp, maxSt: hero.maxSt, hp: Math.round(hero.hp), st: Math.round(hero.st), atk: SET.atk, atkMul: ATK_MUL }; },
+    setStartLevel: setStartLevel,
+    getProgress: function () { return { level: level, unlocked: SET.unlocked, startLevel: SET.startLevel, max: MAX_LEVEL }; },
+    buildLevelSelect: buildLevelSelect,
     report: function () {
       return {
         state: hero.state, hp: hero.hp, weapon: hero.weapon,
@@ -3666,6 +3739,12 @@
   const SET_KEY = 'sr_settings_v1';
   const SET_DEFAULT = {
     music: 0.8, sfx: 0.9, vox: 1.0,
+    difficulty: 1,        // 0 轻松 / 1 普通 / 2 困难
+    maxHp: 100,           // 生命上限（血条）
+    maxSt: 100,           // 体力上限
+    atk: 100,             // 攻击力百分比（100 = 原值）
+    unlocked: 1,          // 已抵达的最高层数
+    startLevel: 1,        // 选关：本次要进入的层数
     leftHand: false,
     layout: { stick: null, abtns: null },
     quick: [null, null, null, null, null, null]
@@ -3673,6 +3752,14 @@
   let SET = loadSettings();
   // 用持久化设置覆盖默认音量（总线在 initAudio 中按这些值创建）
   MUSIC_VOL = SET.music; SFX_VOL = SET.sfx; VOX_VOL = SET.vox;
+  // 难度与攻击力倍率回填到全局（spawnWave 在本模块之前已执行过，故用全局承接）
+  DIFF_IDX = clampInt(SET.difficulty, 0, DIFFS.length - 1, 1);
+  ATK_MUL = Math.max(0.1, SET.atk / 100);
+  SET.maxHp = clampInt(SET.maxHp, 50, 400, 100);
+  SET.maxSt = clampInt(SET.maxSt, 50, 300, 100);
+  SET.atk = clampInt(SET.atk, 25, 300, 100);
+  SET.unlocked = clampInt(SET.unlocked, 1, MAX_LEVEL, 1);
+  SET.startLevel = clampInt(SET.startLevel, 1, MAX_LEVEL, 1);
 
   let layoutEditing = false;   // 编辑布局时屏蔽摇杆/动作键自身响应（供 stickStart/bindPress 读取）
   let editing = false;         // 设置页“编辑布局”开关
@@ -3701,6 +3788,82 @@
   function applySfxVol(v) { SET.sfx = clamp01(v); SFX_VOL = SET.sfx; if (sfxBus) sfxBus.gain.value = SFX_VOL; }
   function applyVoxVol(v) { SET.vox = clamp01(v); VOX_VOL = SET.vox; if (voxBus) voxBus.gain.value = VOX_VOL; }
 
+  /* ---------- 难度与角色属性 ---------- */
+  function diffNow() { return DIFFS[clampInt(DIFF_IDX, 0, DIFFS.length - 1, 1)] || DIFFS[1]; }
+  // HUD 区域文案：普通难度不额外标注，避免小屏拥挤
+  function regionText(cfg) {
+    const d = diffNow();
+    return '碎境大陆 · ' + cfg.name + (d.name === '普通' ? '' : ' · ' + d.name);
+  }
+  // 生命 / 体力上限即时生效：提高上限时按差额回补，降低时按新上限截断
+  function applyHeroStats(healDiff) {
+    const oldHp = hero.maxHp, oldSt = hero.maxSt;
+    hero.maxHp = SET.maxHp;
+    hero.maxSt = SET.maxSt;
+    if (hero.hp > hero.maxHp) hero.hp = hero.maxHp;
+    else if (healDiff && hero.maxHp > oldHp) hero.hp = Math.min(hero.maxHp, hero.hp + (hero.maxHp - oldHp));
+    if (hero.st > hero.maxSt) hero.st = hero.maxSt;
+    else if (healDiff && hero.maxSt > oldSt) hero.st = Math.min(hero.maxSt, hero.st + (hero.maxSt - oldSt));
+  }
+  function applyDifficulty(idx) {
+    DIFF_IDX = clampInt(idx, 0, DIFFS.length - 1, 1);
+    SET.difficulty = DIFF_IDX;
+    saveSettings();
+    updateStartMeta();
+  }
+  function applyAtk(pct) {
+    SET.atk = clampInt(pct, 25, 300, 100);
+    ATK_MUL = SET.atk / 100;
+    saveSettings();
+  }
+  function applyMaxHp(v) {
+    SET.maxHp = clampInt(v, 50, 400, 100);
+    applyHeroStats(true);
+    saveSettings();
+  }
+  function applyMaxSt(v) {
+    SET.maxSt = clampInt(v, 50, 300, 100);
+    applyHeroStats(true);
+    saveSettings();
+  }
+  // 选关：设置本次进入的层数
+  function setStartLevel(v) {
+    SET.startLevel = clampInt(v, 1, MAX_LEVEL, 1);
+    saveSettings();
+    updateStartMeta();
+    return SET.startLevel;
+  }
+  function markUnlocked(lv) {
+    if (lv + 1 > SET.unlocked) {
+      SET.unlocked = clampInt(lv + 1, 1, MAX_LEVEL, 1);
+      saveSettings();
+      buildLevelSelect();
+      updateStartMeta();
+    }
+  }
+  // 起始页：层数下拉（可选 1 ~ MAX_LEVEL，已抵达的层数标注）
+  function buildLevelSelect() {
+    const sel = document.getElementById('startLevel');
+    if (!sel) return;
+    const cur = sel.value ? parseInt(sel.value, 10) : SET.startLevel;
+    sel.innerHTML = '';
+    for (let lv = 1; lv <= MAX_LEVEL; lv++) {
+      const op = document.createElement('option');
+      op.value = String(lv);
+      const reached = lv <= SET.unlocked;
+      op.textContent = '第 ' + lv + ' 裂片' + (reached ? '' : '（未抵达）');
+      sel.appendChild(op);
+    }
+    sel.value = String(clampInt(cur, 1, MAX_LEVEL, 1));
+  }
+  function updateStartMeta() {
+    const el = document.getElementById('startMeta');
+    if (!el) return;
+    const d = diffNow();
+    el.textContent = '已抵达 第 ' + SET.unlocked + ' 层 · 难度 ' + d.name +
+      ' · 起始 第 ' + SET.startLevel + ' 层';
+  }
+
   /* ---------- 手柄位置 ---------- */
   function applyLayout() {
     const st = document.getElementById('stick'), ab = document.getElementById('abtns');
@@ -3721,28 +3884,148 @@
   }
   function saveLayoutFromDOM() {
     const st = document.getElementById('stick'), ab = document.getElementById('abtns');
-    SET.layout.stick = st.style.left ? { x: parseInt(st.style.left, 10), y: parseInt(st.style.top, 10) } : null;
-    SET.layout.abtns = ab.style.left ? { x: parseInt(ab.style.left, 10), y: parseInt(ab.style.top, 10) } : null;
-    SET.leftHand = false;
+    const prev = (editSnapshot && editSnapshot.layout) || SET.layout;
+    if (layoutForced) {
+      // 编辑中点过“重置” → 直接存回默认布局
+      SET.leftHand = false; SET.layout = { stick: null, abtns: null };
+    } else if (!layoutDirty.stick && !layoutDirty.abtns) {
+      // 完全没拖动 → 保持进入编辑前的状态（含左手模式）
+      if (editSnapshot) {
+        SET.leftHand = editSnapshot.leftHand;
+        SET.layout = JSON.parse(JSON.stringify(editSnapshot.layout));
+      }
+    } else {
+      SET.layout.stick = layoutDirty.stick ? (posOf(st) || prev.stick || null) : (prev.stick || null);
+      SET.layout.abtns = layoutDirty.abtns ? (posOf(ab) || prev.abtns || null) : (prev.abtns || null);
+      SET.leftHand = false;
+    }
     saveSettings();
+    applyLayout();
   }
-  function enableDrag(el) {
+  function enableDrag(el, key) {
     if (!el) return;
     el.style.touchAction = 'none';
+    let dragging = false, offX = 0, offY = 0;
+    function begin(cx, cy) {
+      const r = el.getBoundingClientRect();
+      offX = cx - r.left; offY = cy - r.top;
+      dragging = true;
+    }
+    function moveTo(cx, cy) {
+      if (!dragging) return;
+      el.style.left = (cx - offX) + 'px';
+      el.style.top = (cy - offY) + 'px';
+      el.style.right = 'auto'; el.style.bottom = 'auto';
+      if (key) { layoutDirty[key] = true; layoutForced = false; }
+    }
+    function end() { dragging = false; }
+    // 指针通道（鼠标 / 触屏统一）
+    const onPMove = function (e) { moveTo(e.clientX, e.clientY); };
+    const onPUp = function () {
+      end();
+      window.removeEventListener('pointermove', onPMove);
+      window.removeEventListener('pointerup', onPUp);
+      window.removeEventListener('pointercancel', onPUp);
+    };
     el.addEventListener('pointerdown', function (e) {
       if (!editing) return;
       e.preventDefault();
-      const r = el.getBoundingClientRect();
-      const offX = e.clientX - r.left, offY = e.clientY - r.top;
-      function move(ev) {
-        el.style.left = (ev.clientX - offX) + 'px';
-        el.style.top = (ev.clientY - offY) + 'px';
-        el.style.right = 'auto'; el.style.bottom = 'auto';
-      }
-      function up() { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); }
-      window.addEventListener('pointermove', move);
-      window.addEventListener('pointerup', up);
+      begin(e.clientX, e.clientY);
+      window.addEventListener('pointermove', onPMove);
+      window.addEventListener('pointerup', onPUp);
+      window.addEventListener('pointercancel', onPUp);
     });
+    // 触摸兜底通道：部分移动端浏览器在 touch 序列中不派发 pointermove
+    el.addEventListener('touchstart', function (e) {
+      if (!editing) return;
+      const t = e.changedTouches[0];
+      if (t) begin(t.clientX, t.clientY);
+    }, { passive: true });
+    el.addEventListener('touchmove', function (e) {
+      if (!editing || !dragging) return;
+      const t = e.changedTouches[0];
+      if (t) moveTo(t.clientX, t.clientY);
+    }, { passive: true });
+    el.addEventListener('touchend', end);
+    el.addEventListener('touchcancel', end);
+  }
+
+  /* ---------- 编辑手柄位置：关弹窗 → 拖拽 → 保存 ---------- */
+  const layoutBar = document.getElementById('layoutEditBar');
+  let layoutEditMode = false;                       // 弹窗已关、正在画面上拖拽的编辑态
+  let editSnapshot = null;                          // 进入编辑前的布局快照（取消时还原）
+  let editWasRunning = false;                       // 进入编辑前是否在游戏中
+  let layoutDirty = { stick: false, abtns: false }; // 本次编辑中哪些元素被拖动过
+  let layoutForced = false;                         // 编辑中点过“重置”→ 强制存回默认布局
+  let editHiddenScreens = [];                       // 编辑期间临时隐藏的全屏页（起始页/通关页）
+
+  function posOf(el) {
+    if (!el || !el.style.left) return null;
+    const x = parseInt(el.style.left, 10), y = parseInt(el.style.top, 10);
+    if (isNaN(x) || isNaN(y)) return null;
+    return { x: x, y: y };
+  }
+  // 把元素当前视觉位置固化成 left/top：拖拽起点与所见完全一致（左手/默认锚定布局也能直接拖）
+  function freezeElPos(el) {
+    if (!el) return;
+    const p = el.offsetParent || el.parentElement;
+    const pr = p ? p.getBoundingClientRect() : { left: 0, top: 0 };
+    const r = el.getBoundingClientRect();
+    el.style.left = Math.round(r.left - pr.left) + 'px';
+    el.style.top = Math.round(r.top - pr.top) + 'px';
+    el.style.right = 'auto'; el.style.bottom = 'auto';
+  }
+  function showLayoutBar(show) {
+    if (layoutBar) layoutBar.style.display = show ? 'flex' : 'none';
+    document.body.classList.toggle('editingLayout', !!show);
+  }
+  function setHint(txt) {
+    const h = document.getElementById('layoutHint');
+    if (h) h.textContent = txt;
+  }
+  function enterLayoutEdit() {
+    if (layoutEditMode) return;
+    layoutEditMode = true;
+    // 关键：设置面板打开时已经把 running 置为 false，这里不能再读 running，
+    // 否则会把“进入编辑前游戏在运行”这一事实记丢 → 保存后游戏永远停在暂停态。
+    editWasRunning = started && (running || setWasRunning);
+    if (editWasRunning) running = false;            // 编辑时暂停，避免误操作角色
+    editSnapshot = { leftHand: SET.leftHand, layout: JSON.parse(JSON.stringify(SET.layout)) };
+    layoutDirty.stick = false; layoutDirty.abtns = false; layoutForced = false;
+    const st = document.getElementById('stick'), ab = document.getElementById('abtns');
+    freezeElPos(st); freezeElPos(ab);
+    // 左手布局固化后按“自定义坐标”保存，避免保存时跳回默认位置
+    if (SET.leftHand) { layoutDirty.stick = true; layoutDirty.abtns = true; }
+    editing = true; layoutEditing = true;           // editing 供拖拽；layoutEditing 屏蔽摇杆/按键自身响应
+    if (setEl) setEl.classList.add('hide');          // ① 先关闭设置弹窗，露出摇杆与按键
+    // 起始页/通关页同样是全屏浮层，会挡住摇杆 → 编辑期间一并临时隐藏
+    editHiddenScreens = [];
+    ['startScreen', 'winScreen'].forEach(function (id) {
+      const sc = document.getElementById(id);
+      if (sc && !sc.classList.contains('hide')) { sc.classList.add('hide'); editHiddenScreens.push(sc); }
+    });
+    showLayoutBar(true);                             // ② 显示浮动条（保存位置 / 取消 / 重置）
+    setHint('正在调整位置：直接拖动画面上的摇杆与按键');
+    toast('拖动摇杆与按键调整位置，完成后点「保存位置」');
+  }
+  function exitLayoutEdit(save) {
+    if (!layoutEditMode) return;
+    layoutEditMode = false;
+    editing = false; layoutEditing = false;
+    showLayoutBar(false);
+    if (save) {
+      saveLayoutFromDOM();
+    } else if (editSnapshot) {
+      SET.leftHand = editSnapshot.leftHand;
+      SET.layout = JSON.parse(JSON.stringify(editSnapshot.layout));
+      applyLayout(); saveSettings();
+    }
+    editSnapshot = null;
+    for (let i = 0; i < editHiddenScreens.length; i++) editHiddenScreens[i].classList.remove('hide');
+    editHiddenScreens = [];
+    if (editWasRunning) running = true;             // 先恢复运行态，openSettings 才能记住“之前在游戏中”
+    openSettings();                                 // ③ 保存/取消后重新打开设置弹窗
+    setHint(save ? '已保存手柄位置' : '已取消调整');
   }
 
   /* ---------- 快捷技能栏 ---------- */
@@ -3795,7 +4078,14 @@
   /* ---------- 设置浮层开关 ---------- */
   const setEl = document.getElementById('settings');
   function openSettings() {
-    setWasRunning = (started && running);
+    if (layoutEditMode) {   // 兜底：编辑态下被外部（如右上 ⚙）唤起设置 → 先退出编辑再开面板
+      layoutEditMode = false; editing = false; layoutEditing = false;
+      showLayoutBar(false);
+      for (let i = 0; i < editHiddenScreens.length; i++) editHiddenScreens[i].classList.remove('hide');
+      editHiddenScreens = [];
+      if (editWasRunning) running = true;
+    }
+    setWasRunning = started && (running || setWasRunning);
     if (setWasRunning) running = false;
     syncSettingsUI();
     if (setEl) setEl.classList.remove('hide');
@@ -3803,6 +4093,7 @@
   function closeSettings() {
     if (setEl) setEl.classList.add('hide');
     if (setWasRunning && started) running = true;
+    setWasRunning = false;      // 复位，避免下次打开设置时误判"游戏中"
     saveSettings();
   }
   function syncSettingsUI() {
@@ -3815,11 +4106,20 @@
     if (volMusic) { volMusic.value = Math.round(SET.music * 100); if (volMusicV) volMusicV.textContent = volMusic.value + '%'; }
     if (volSfx) { volSfx.value = Math.round(SET.sfx * 100); if (volSfxV) volSfxV.textContent = volSfx.value + '%'; }
     if (volVox) { volVox.value = Math.round(SET.vox * 100); if (volVoxV) volVoxV.textContent = volVox.value + '%'; }
+    const diffEl = document.getElementById('difficulty');
+    const statHp = document.getElementById('statHp'), statHpV = document.getElementById('statHpV');
+    const statSt = document.getElementById('statSt'), statStV = document.getElementById('statStV');
+    const statAtk = document.getElementById('statAtk'), statAtkV = document.getElementById('statAtkV');
+    if (diffEl) diffEl.value = String(SET.difficulty);
+    if (statHp) { statHp.value = SET.maxHp; if (statHpV) statHpV.textContent = String(SET.maxHp); }
+    if (statSt) { statSt.value = SET.maxSt; if (statStV) statStV.textContent = String(SET.maxSt); }
+    if (statAtk) { statAtk.value = SET.atk; if (statAtkV) statAtkV.textContent = SET.atk + '%'; }
     if (leftHandEl) leftHandEl.checked = !!SET.leftHand;
     const sels = document.querySelectorAll('#qSlots select');
     for (let n = 0; n < sels.length; n++) sels[n].value = SET.quick[n] || '';
-    editing = false;
-    if (editLayoutBtn) { editLayoutBtn.textContent = '编辑布局'; editLayoutBtn.classList.remove('on'); }
+    editing = false; layoutEditing = false;
+    showLayoutBar(false);
+    if (editLayoutBtn) { editLayoutBtn.textContent = '调整位置'; editLayoutBtn.classList.remove('on'); }
     if (layoutHint) layoutHint.textContent = '';
   }
   function buildQSlots() {
@@ -3853,6 +4153,9 @@
     const resetLayoutBtn = document.getElementById('resetLayout');
     const layoutHint = document.getElementById('layoutHint');
     const setResetAllBtn = document.getElementById('setResetAll');
+    const layoutSaveBtn = document.getElementById('layoutSave');
+    const layoutCancelBtn = document.getElementById('layoutCancel');
+    const layoutResetBtn = document.getElementById('layoutReset');
 
     if (setBtnEl) setBtnEl.addEventListener('click', openSettings);
     if (startSetBtnEl) startSetBtnEl.addEventListener('click', openSettings);
@@ -3863,21 +4166,49 @@
     if (volSfx) volSfx.addEventListener('input', function () { applySfxVol(+volSfx.value / 100); if (volSfxV) volSfxV.textContent = volSfx.value + '%'; });
     if (volVox) volVox.addEventListener('input', function () { applyVoxVol(+volVox.value / 100); if (volVoxV) volVoxV.textContent = volVox.value + '%'; });
 
+    // 难度与角色属性
+    const diffEl = document.getElementById('difficulty');
+    const statHp = document.getElementById('statHp'), statHpV = document.getElementById('statHpV');
+    const statSt = document.getElementById('statSt'), statStV = document.getElementById('statStV');
+    const statAtk = document.getElementById('statAtk'), statAtkV = document.getElementById('statAtkV');
+    if (diffEl) diffEl.addEventListener('change', function () {
+      applyDifficulty(+diffEl.value);
+      toast('难度：' + diffNow().name + ' · 对新生成的敌人生效');
+    });
+    if (statHp) statHp.addEventListener('input', function () {
+      applyMaxHp(+statHp.value);
+      if (statHpV) statHpV.textContent = statHp.value;
+    });
+    if (statSt) statSt.addEventListener('input', function () {
+      applyMaxSt(+statSt.value);
+      if (statStV) statStV.textContent = statSt.value;
+    });
+    if (statAtk) statAtk.addEventListener('input', function () {
+      applyAtk(+statAtk.value);
+      if (statAtkV) statAtkV.textContent = statAtk.value + '%';
+    });
+    const startLevelSel = document.getElementById('startLevel');
+    if (startLevelSel) startLevelSel.addEventListener('change', function () {
+      setStartLevel(+startLevelSel.value);
+    });
+
     if (leftHandEl) leftHandEl.addEventListener('change', function () {
       SET.leftHand = leftHandEl.checked; SET.layout = { stick: null, abtns: null };
       applyLayout(); saveSettings();
       if (layoutHint) layoutHint.textContent = SET.leftHand ? '已切换为左手布局' : '已切换为右手布局';
     });
     if (editLayoutBtn) editLayoutBtn.addEventListener('click', function () {
-      editing = !editing;
-      if (editing) {
-        editLayoutBtn.textContent = '完成编辑'; editLayoutBtn.classList.add('on');
-        if (layoutHint) layoutHint.textContent = '拖动摇杆与按键到合适位置，再点“完成编辑”';
-      } else {
-        editLayoutBtn.textContent = '编辑布局'; editLayoutBtn.classList.remove('on');
-        if (layoutHint) layoutHint.textContent = '已保存当前位置';
-        saveLayoutFromDOM();
-      }
+      enterLayoutEdit();   // 关闭设置弹窗 → 画面上拖拽 → 点「保存位置」回到设置
+    });
+    if (layoutSaveBtn) layoutSaveBtn.addEventListener('click', function () { exitLayoutEdit(true); });
+    if (layoutCancelBtn) layoutCancelBtn.addEventListener('click', function () { exitLayoutEdit(false); });
+    if (layoutResetBtn) layoutResetBtn.addEventListener('click', function () {
+      SET.leftHand = false; SET.layout = { stick: null, abtns: null };
+      applyLayout();
+      freezeElPos(document.getElementById('stick'));
+      freezeElPos(document.getElementById('abtns'));
+      layoutDirty.stick = false; layoutDirty.abtns = false; layoutForced = true;
+      toast('已重置为默认位置，可继续拖动');
     });
     if (resetLayoutBtn) resetLayoutBtn.addEventListener('click', function () {
       SET.leftHand = false; SET.layout = { stick: null, abtns: null };
@@ -3891,19 +4222,28 @@
       if (Music.setMusicVol) Music.setMusicVol(SET.music);
       if (sfxBus) sfxBus.gain.value = SFX_VOL;
       if (voxBus) voxBus.gain.value = VOX_VOL;
+      DIFF_IDX = SET.difficulty; ATK_MUL = SET.atk / 100;
+      applyHeroStats(false);
       applyLayout(); buildQSlots(); renderQBar(); syncSettingsUI(); saveSettings();
+      buildLevelSelect(); updateStartMeta();
       if (layoutHint) layoutHint.textContent = '已恢复默认设置';
+      toast('已恢复默认设置');
     });
 
-    enableDrag(document.getElementById('stick'));
-    enableDrag(document.getElementById('abtns'));
+    enableDrag(document.getElementById('stick'), 'stick');
+    enableDrag(document.getElementById('abtns'), 'abtns');
     buildQSlots();
     applyLayout();
     renderQBar();
+    buildLevelSelect();
+    updateStartMeta();
+    applyHeroStats(false);
   })();
 
-  /* 游戏中按 Esc 关闭设置 */
+  /* 游戏中按 Esc 关闭设置 / 取消手柄位置编辑 */
   window.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && setEl && !setEl.classList.contains('hide')) closeSettings();
+    if (e.key !== 'Escape') return;
+    if (layoutEditMode) { exitLayoutEdit(false); return; }
+    if (setEl && !setEl.classList.contains('hide')) closeSettings();
   });
 })();

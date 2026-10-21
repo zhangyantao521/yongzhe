@@ -156,12 +156,17 @@
   /* 开场 / 通关 */
   .screen {
     position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 18px;
+    align-items: center; justify-content: flex-start; gap: 18px;
     background:
       radial-gradient(ellipse at 50% 40%, rgba(28,44,72,0.92), rgba(4,7,13,0.98)),
       repeating-linear-gradient(0deg, rgba(120,170,255,0.05) 0 1px, transparent 1px 4px);
     text-align: center; padding: 24px;
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
   }
+  /* 安全居中：有富余空间时首尾 auto 外边距把内容推到中间；
+     内容超高时 auto 外边距归零 → 从顶部排列且可滚动到（避免居中导致裁切） */
+  .screen > *:first-child { margin-top: auto; }
+  .screen > *:last-child { margin-bottom: auto; }
   .screen.hide { display: none; }
   .logo { font-size: 46px; letter-spacing: 12px; color: #f4e3bd; text-shadow: 4px 4px 0 #1b2438, 0 0 30px rgba(255,200,110,0.35); }
   .logo small { display: block; font-size: 12px; letter-spacing: 7px; color: #6d86ab; margin-top: 12px; text-shadow: none; }
@@ -278,6 +283,7 @@
   /* 桌面端隐藏触屏 UI；触屏端隐藏键盘图例 */
   body:not(.touch) #touchUI { display: none; }
   body.touch #controls { display: none; }
+  body:not(.touch) .touchOnly { display: none; }   /* 手柄位置等触屏专属设置在桌面端不显示 */
   #mobSub { display: none; }
   body.touch #mobSub { display: block; }
 
@@ -300,6 +306,20 @@
     #stick { transform: scale(0.88); transform-origin: bottom left; }
   }
 
+  /* 横屏 / 矮屏：压缩起始页，保证「进入裂片」与选关控件整屏可见 */
+  @media (orientation: landscape) and (max-height: 560px) {
+    .screen { gap: 8px; padding: 10px 16px; }
+    .logo { font-size: 26px; letter-spacing: 6px; text-shadow: 3px 3px 0 #1b2438; }
+    .logo small { font-size: 10px; letter-spacing: 4px; margin-top: 6px; }
+    .sub { font-size: 11px; line-height: 1.55; letter-spacing: 1px; max-width: 560px; }
+    .legend { gap: 10px; font-size: 10px; margin-top: 0; }
+    .legend span { padding: 1px 6px; }
+    .btn { padding: 7px 22px; font-size: 13px; letter-spacing: 3px; box-shadow: 3px 3px 0 #7a5a22; }
+    .startBtns { gap: 10px; }
+    .startPick { padding: 6px 12px; gap: 4px; }
+    .startPick select { padding: 3px 6px; }
+  }
+
   /* ================= 设置 ================= */
   #setBtn {
     position: fixed; top: 18px; left: 300px; z-index: 20;
@@ -309,8 +329,14 @@
   #setBtn:hover { color: #ffd88a; border-color: #4a5d80; }
   body.touch #setBtn { top: 14px; right: 130px; left: auto; }
 
+  /* 设置浮层自身可滚动，内容超高时从顶部排列而非居中裁切（修复手机横屏显示不全） */
+  #settings {
+    overflow-y: auto; justify-content: flex-start; -webkit-overflow-scrolling: touch;
+    padding: 24px;
+  }
   #settings .setPanel {
-    width: min(560px, 92vw); max-height: 84vh; overflow-y: auto;
+    width: min(560px, 92vw); max-height: calc(100vh - 48px); overflow-y: auto;
+    margin: auto; /* 有富余空间时垂直居中；超出时退化为顶部对齐且可滚动到顶 */
     background: rgba(9,14,24,0.96); border: 2px solid #2c3b56;
     box-shadow: 0 0 0 2px rgba(5,8,15,0.9), inset 0 0 18px rgba(80,150,255,0.08);
     padding: 18px 20px 20px; text-align: left;
@@ -345,10 +371,68 @@
   #settings .setFoot { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; border-top: 1px dashed #2c3b56; padding-top: 14px; }
   #settings .btn { margin-top: 0; padding: 9px 26px; font-size: 13px; }
 
+  /* 横屏 / 矮屏：收紧设置弹窗间距，尽量整屏显示不滚动 */
+  @media (orientation: landscape) and (max-height: 500px) {
+    #settings { padding: 10px; }
+    #settings .setPanel { max-height: calc(100vh - 20px); padding: 12px 14px 14px; }
+    #settings .setHead { font-size: 15px; margin-bottom: 8px; padding-bottom: 7px; }
+    #settings section { margin: 9px 0; }
+    #settings h3 { margin-bottom: 6px; }
+    #settings .volRow { margin-bottom: 6px; }
+    #settings .row { margin-bottom: 5px; }
+    #settings .qSlots { gap: 4px; }
+    #settings .hint { margin-bottom: 5px; line-height: 1.45; }
+    #settings .setFoot { margin-top: 10px; padding-top: 9px; }
+    #settings .btn { padding: 7px 18px; font-size: 12px; }
+  }
+
+  /* 编辑手柄位置时的浮动操作条（此时设置弹窗已关闭，直接在画面上拖拽） */
+  #layoutEditBar {
+    position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+    z-index: 36; display: none; align-items: center; gap: 10px;
+    padding: 9px 14px; background: rgba(9,14,24,0.94); border: 2px solid #8a6b2f;
+    box-shadow: 0 0 0 2px rgba(5,8,15,0.9), 3px 3px 0 rgba(5,8,15,0.6);
+    font-size: 12px; color: #cfdaea; white-space: nowrap; max-width: 94vw;
+  }
+  #layoutEditBar .lehint { color: #ffd88a; letter-spacing: 1px; }
+  #layoutEditBar .lbbtn {
+    font-family: inherit; font-size: 12px; letter-spacing: 1px; cursor: pointer;
+    color: #cfdaea; background: rgba(20,28,40,0.9); border: 1px solid #33445f; padding: 6px 12px;
+  }
+  #layoutEditBar .lbbtn.primary {
+    color: #121a26; background: #ffd88a; border-color: #7a5a22; font-weight: bold;
+  }
+  #layoutEditBar .lbbtn:active { transform: translate(1px,1px); }
+  /* 编辑态高亮：提示摇杆/按键可拖 */
+  body.editingLayout #stick, body.editingLayout #abtns { z-index: 5; cursor: grab; }
+  body.editingLayout #stick .ring { outline: 2px dashed rgba(255,216,138,0.85); outline-offset: 4px; }
+  body.editingLayout #abtns { outline: 2px dashed rgba(255,216,138,0.6); outline-offset: 4px; border-radius: 18px; }
+  @media (orientation: landscape) and (max-height: 500px) {
+    #layoutEditBar { top: 8px; padding: 6px 10px; gap: 8px; font-size: 11px; }
+    #layoutEditBar .lbbtn { padding: 5px 10px; font-size: 11px; }
+  }
+
   /* 起始页按钮组 */
   .startBtns { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
   .btn.ghost { background: #1b2740; color: #b9c8dd; box-shadow: 4px 4px 0 #16203a; }
   .btn.ghost:hover { transform: translate(1px,1px); box-shadow: 3px 3px 0 #16203a; }
+
+  /* 起始页：选关 */
+  .startPick {
+    display: flex; flex-direction: column; align-items: center; gap: 7px;
+    padding: 10px 16px; background: rgba(11,17,29,0.7); border: 1px solid #2c3b56;
+  }
+  .startPick .spRow { display: flex; align-items: center; gap: 10px; }
+  .startPick .spLabel { font-size: 12px; letter-spacing: 2px; color: #9db1cc; }
+  .startPick select {
+    font-family: inherit; font-size: 13px; color: #efe6d2; background: #141c2c;
+    border: 1px solid #3b4c69; padding: 5px 8px; min-width: 168px; cursor: pointer;
+  }
+  .startPick .spMeta { font-size: 11px; letter-spacing: 1px; color: #7d93b5; }
+  @media (max-width: 620px) {
+    .startPick { padding: 8px 12px; }
+    .startPick select { min-width: 132px; font-size: 12px; }
+  }
 
   /* 快捷技能栏 */
   #qbar {
@@ -471,7 +555,14 @@
     </div>
     <div class="startBtns">
       <button class="btn" id="startBtn">进 入 裂 片</button>
-      <button class="btn ghost" id="startSetBtn">设 置</button>
+      <!-- <button class="btn ghost" id="startSetBtn">设 置</button> -->
+    </div>
+    <div class="startPick">
+      <div class="spRow">
+        <span class="spLabel">起始层数</span>
+        <select id="startLevel" title="直接选择要进入的裂片层数"></select>
+      </div>
+      <div class="spMeta" id="startMeta">已抵达 第 1 层 · 难度 普通</div>
     </div>
   </div>
 
@@ -493,17 +584,33 @@
         <div class="volRow"><label>语音喊招</label><input type="range" id="volVox" min="0" max="100"><span class="volVal" id="volVoxV">100%</span></div>
       </section>
 
-      <section>
+      <section class="touchOnly">
         <h3>操作手柄位置</h3>
-        <span class="hint">触屏时拖动可自由摆放摇杆与按键；也可一键切换左手/右手布局。</span>
+        <span class="hint">触屏专用：点「调整位置」会<b>暂时关闭本面板</b>，直接在画面上拖动摇杆与按键；拖完点上方浮动条的「保存位置」即回到设置。</span>
         <div class="row">
           <label><input type="checkbox" id="leftHand"> 左手模式（摇杆在右 · 按键在左）</label>
         </div>
         <div class="row">
-          <button class="sbtn" id="editLayout">编辑布局</button>
+          <button class="sbtn" id="editLayout">调整位置</button>
           <button class="sbtn ghost" id="resetLayout">重置位置</button>
           <span class="hint" id="layoutHint"></span>
         </div>
+      </section>
+
+      <section>
+        <h3>难度与角色</h3>
+        <div class="row">
+          <label style="width:76px;flex:none">游戏难度</label>
+          <select id="difficulty" style="flex:1">
+            <option value="0">轻松 · 敌人脆而温和</option>
+            <option value="1" selected>普通 · 标准体验</option>
+            <option value="2">困难 · 敌人凶且快</option>
+          </select>
+        </div>
+        <div class="volRow"><label>生命上限</label><input type="range" id="statHp" min="50" max="400" step="10"><span class="volVal" id="statHpV">100</span></div>
+        <div class="volRow"><label>体力上限</label><input type="range" id="statSt" min="50" max="300" step="10"><span class="volVal" id="statStV">100</span></div>
+        <div class="volRow"><label>攻击力</label><input type="range" id="statAtk" min="25" max="300" step="5"><span class="volVal" id="statAtkV">100%</span></div>
+        <span class="hint" id="statHint">生命 / 体力上限即时生效（提高上限会同步回补差额）；难度与攻击力对<b>新生成</b>的敌人与之后的攻击生效。</span>
       </section>
 
       <section>
@@ -517,6 +624,14 @@
         <button class="btn" id="setDone">完 成</button>
       </div>
     </div>
+  </div>
+
+  <!-- 编辑手柄位置：浮动操作条（设置弹窗关闭状态下，在画面上直接拖拽） -->
+  <div id="layoutEditBar">
+    <span class="lehint">拖动画面上的摇杆与按键</span>
+    <button class="lbbtn" id="layoutReset">重置</button>
+    <button class="lbbtn" id="layoutCancel">取消</button>
+    <button class="lbbtn primary" id="layoutSave">保存位置</button>
   </div>
 
   <!-- 快捷技能栏（运行时渲染） -->

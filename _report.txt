@@ -1,20 +1,15 @@
 level=1 enemies=7
---- audio / music / voice self-check ---
-audioOn=true playing=true mode=adventure
-scheduled=2 (>=1)
-mode=adventure (expect adventure)
-muted=false (expect false)
-setMusicMode(boss) -> mode=boss (expect boss)
-levelCfg(5).boss=1 (expect 1)
-levelCfg(4).boss=0 (expect 0)
-boss type=boss alive=true
-bossActive=true mode=boss (expect true/boss)
-after boss dead mode=adventure (expect adventure)
-shoutCount=1 (>0)
-voxFired=1 (>0)
-nameCount=34 missing=0 synthThrew=0
-toggleMusic -> muted=true
-hasVoicePack=true packKeys=34 (expect true/34)
-AUDIO-OK
+stick-ui el=1 knob=1 ticks=4
+stick full-tilt dz=-2.30 (期望≈-2.30) state={"active":false,"kx":0,"ky":0,"mag":0,"sector":null}
+stick half-tilt dz=-1.58 (期望≈-1.58) 速比=0.69 (期望≈0.69)
+stick deadzone dz=0.00 (期望 0) sector=null
+stick diagonal dx=1.61 dz=-1.61 (期望均≈1.6) facing=2.36 (期望≈2.36)
+stick quantize(0.8,-0.6) sector=r (期望 r)
+stick cmd uu-light=破空三连斩 dmg=43.0 (期望 破空三连斩 / 43)
+stick cmd ud-light=回燕斩 dmg=30.0 (期望 回燕斩 / 30)
+stick cmd du-light=升龙剑 dmg=20.0 (期望 升龙剑 / 20)
+stick cmd dd-heavy=劈山剑 dmg=40.0 (期望 劈山剑 / 40)
+stick release-stop dz=0.000 (期望 0)
+stick single-flick state=light (期望 light)
 check=ok
 errors=none

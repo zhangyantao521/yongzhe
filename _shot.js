@@ -61,8 +61,11 @@
 
   try {
     S.manual = true;
-    S.start();
-    L('level=' + S.level() + ' enemies=' + S.enemiesLeft());
+    var skipStart = (mode === 'startview');
+    if (!skipStart) {
+      S.start();
+      L('level=' + S.level() + ' enemies=' + S.enemiesLeft());
+    }
 
     if (mode === 'sim') {
       /* ============ 指令技数值自检 ============ */
@@ -828,10 +831,132 @@
       // 10. 打开/关闭设置浮层
       S.openSettings();
       L('openSettings hidden=' + document.getElementById('settings').classList.contains('hide'));
+      // 几何诊断（横屏矮屏关键）：把面板滚到最底，确认底部按钮可达、不被裁切
+      var se = document.getElementById('settings');
+      var pn = se.querySelector('.setPanel');
+      var ft = pn.querySelector('.setFoot');
+      var rp = pn.getBoundingClientRect();
+      var winH = window.innerHeight;
+      pn.scrollTop = pn.scrollHeight;
+      var rf = ft.getBoundingClientRect();
+      L('geo panelTop=' + Math.round(rp.top) + ' panelBottom=' + Math.round(rp.bottom) +
+        ' winH=' + winH + ' scrollable=' + (pn.scrollHeight > pn.clientHeight + 2) +
+        ' footBottom=' + Math.round(rf.bottom) + ' footInView=' + (rf.bottom <= winH + 1));
       S.closeSettings();
       L('closeSettings hidden=' + document.getElementById('settings').classList.contains('hide'));
 
+      // 11. 编辑手柄位置新流程：关弹窗 → 显示浮动条 → 拖拽 → 保存 → 弹窗重开
+      var bar = document.getElementById('layoutEditBar');
+      var stEl = document.getElementById('stick'), abEl = document.getElementById('abtns');
+      S.setLayout({ leftHand: false, stick: { x: 60, y: 300 }, abtns: { x: 600, y: 300 } });
+      S.openSettings();
+      S.enterLayoutEdit();
+      var se2 = document.getElementById('settings');
+      L('edit1 settingsHidden=' + se2.classList.contains('hide') +
+        ' barVisible=' + (bar.style.display !== 'none') +
+        ' bodyClass=' + document.body.classList.contains('editingLayout') +
+        ' isEdit=' + S.isLayoutEdit());
+      // 模拟拖拽摇杆（pointer 事件链路）
+      var r0 = stEl.getBoundingClientRect();
+      var pd = new PointerEvent('pointerdown', { clientX: r0.left + 20, clientY: r0.top + 20, bubbles: true });
+      stEl.dispatchEvent(pd);
+      window.dispatchEvent(new PointerEvent('pointermove', { clientX: r0.left + 140, clientY: r0.top + 10, bubbles: true }));
+      window.dispatchEvent(new PointerEvent('pointerup', { clientX: r0.left + 140, clientY: r0.top + 10, bubbles: true }));
+      L('edit2 stickLeft=' + stEl.style.left + ' stickTop=' + stEl.style.top);
+      S.exitLayoutEdit(true);
+      var lay = S.getLayout();
+      L('edit3 settingsBack=' + !se2.classList.contains('hide') +
+        ' barHidden=' + (bar.style.display === 'none') +
+        ' isEdit=' + S.isLayoutEdit() +
+        ' savedStick=' + JSON.stringify(lay.layout.stick));
+      // 取消应还原
+      S.enterLayoutEdit();
+      S.exitLayoutEdit(false);
+      L('edit4 cancelRestored=' + JSON.stringify(S.getLayout().layout.stick) +
+        ' settingsBack=' + !se2.classList.contains('hide'));
+      S.closeSettings();
+      // 11b. 回归：游戏中「调整位置 → 保存位置 → 关闭设置」后游戏必须恢复运行（历史上会永久卡死）
+      L('reg0 runningBefore=' + S.isRunning() + ' started=' + S.isStarted());
+      S.openSettings();
+      L('reg1 runningAfterOpen=' + S.isRunning());
+      S.enterLayoutEdit();
+      L('reg2 runningInEdit=' + S.isRunning());
+      S.exitLayoutEdit(true);
+      L('reg3 runningAfterSave=' + S.isRunning() + ' settingsBack=' + !se2.classList.contains('hide'));
+      S.closeSettings();
+      L('reg4 runningAfterClose=' + S.isRunning());
+
+      // 12. 难度：敌人血量 / 伤害按档位缩放
+      function firstSlime(list) {
+        for (var i = 0; i < list.length; i++) if (list[i].type === 'slime') return list[i];
+        return list[0] || null;
+      }
+      S.setDifficulty(1);
+      S.clearField(); S.spawnWave(S.levelCfg(3));
+      var nSlime = firstSlime(S.enemyStats());
+      S.setDifficulty(2);
+      S.clearField(); S.spawnWave(S.levelCfg(3));
+      var hSlime = firstSlime(S.enemyStats());
+      S.setDifficulty(0);
+      S.clearField(); S.spawnWave(S.levelCfg(3));
+      var eSlime = firstSlime(S.enemyStats());
+      S.setDifficulty(1);
+      L('diff easy hp=' + (eSlime ? eSlime.maxHp : 0) + ' dmg=' + (eSlime ? eSlime.dmg : 0) +
+        ' | normal hp=' + (nSlime ? nSlime.maxHp : 0) + ' dmg=' + (nSlime ? nSlime.dmg : 0) +
+        ' | hard hp=' + (hSlime ? hSlime.maxHp : 0) + ' dmg=' + (hSlime ? hSlime.dmg : 0) +
+        ' name=' + S.getDifficulty().name);
+
+      // 13. 角色属性：生命 / 体力上限即时生效
+      S.setMaxHp(200); S.setMaxSt(150);
+      var gs = S.getStats();
+      L('stats maxHp=' + gs.maxHp + ' maxSt=' + gs.maxSt + ' hp=' + gs.hp + ' st=' + gs.st);
+
+      // 14. 攻击力：200% 实际伤害应为 100% 的两倍
+      //      用石卫（160 血）当靶，避免史莱姆在 200% 下被打死导致伤害被截断
+      S.setAtk(200);
+      clear(); var a1 = dummy('stone', 2.0);
+      S.equip(0); castTo('uu', 'light', 1.05);
+      var d200 = a1.maxHp - a1.hp;
+      S.setAtk(100);
+      clear(); var a2 = dummy('stone', 2.0);
+      S.equip(0); castTo('uu', 'light', 1.05);
+      var d100 = a2.maxHp - a2.hp;
+      L('atk d100=' + d100.toFixed(1) + ' d200=' + d200.toFixed(1) +
+        ' ratio=' + (d200 / d100).toFixed(2) + ' (期望 2.00)');
+
+      // 15. 选关：直接进入指定层数
+      S.setStartLevel(7);
+      S.start();
+      L('levelpick level=' + S.level() + ' enemies=' + S.enemiesLeft() +
+        ' unlocked=' + S.getProgress().unlocked + ' startLevel=' + S.getProgress().startLevel);
+      S.setStartLevel(1);
+      S.start();
+      L('levelback level=' + S.level());
+
       L('SETTINGS-OK');
+    }
+
+    if (mode === 'startview') {
+      /* 起始页选关：只截图起始页（不进游戏） */
+      var sel = document.getElementById('startLevel');
+      var lastEl = document.querySelector('#startScreen > *:last-child');
+      var lr = lastEl ? lastEl.getBoundingClientRect() : { bottom: 0 };
+      L('startview options=' + (sel ? sel.options.length : 0) +
+        ' value=' + (sel ? sel.value : '-') +
+        ' lastBottom=' + Math.round(lr.bottom) + ' winH=' + window.innerHeight +
+        ' fits=' + (lr.bottom <= window.innerHeight + 1) +
+        ' meta=' + (document.getElementById('startMeta') ? document.getElementById('startMeta').textContent : '-'));
+      L('STARTVIEW-OK');
+    }
+
+    if (mode === 'settingsview') {
+      /* 视觉检查：停留在设置面板 / 手柄位置编辑态，供截图（view=panel|edit） */
+      var view = q.get('view') || 'edit';
+      S.start();
+      S.setLayout({ leftHand: false, stick: { x: 90, y: 250 }, abtns: { x: 560, y: 210 } });
+      S.openSettings();
+      if (view === 'edit') S.enterLayoutEdit();
+      L('SETTINGSVIEW-OK view=' + view);
     }
 
     if (mode === 'boss') {

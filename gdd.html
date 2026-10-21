@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>碎境勇者 · 游戏设计文档 v1.9</title>
+<title>碎境勇者 · 游戏设计文档 v1.11</title>
 <style>
   :root {
     --paper: #faf8f2;
@@ -99,7 +99,7 @@
 <div class="wrap">
 
 <header class="cover">
-  <div class="kicker">GAME DESIGN DOCUMENT · v1.9</div>
+  <div class="kicker">GAME DESIGN DOCUMENT · v1.11</div>
   <h1>碎境勇者</h1>
   <p class="sub">Shattered Realm — 三维像素 / 动作冒险 / 大陆探索</p>
   <div class="meta">
@@ -418,7 +418,7 @@
 
 <section>
   <h2><span class="no">11</span>设置系统</h2>
-  <p class="lede">游戏内右上齿轮与起始页"设置"按钮均可进入设置浮层，覆盖<strong>三档独立音量</strong>、<strong>触屏手柄布局</strong>与<strong>六槽快捷技能栏</strong>；全部写入 localStorage（键 <code>sr_settings_v1</code>），下次启动自动覆盖默认值。</p>
+  <p class="lede">游戏内右上齿轮与起始页"设置"按钮均可进入设置浮层，覆盖<strong>三档独立音量</strong>、<strong>难度与角色属性</strong>、<strong>触屏手柄布局</strong>与<strong>六槽快捷技能栏</strong>；起始页另提供<strong>选关</strong>（直接选择进入第几层）。全部写入 localStorage（键 <code>sr_settings_v1</code>），下次启动自动覆盖默认值。</p>
 
   <h3>三档独立音量</h3>
   <p>音频走 Web Audio 的三条独立增益总线，互不干扰，各自可实时调：</p>
@@ -432,13 +432,35 @@
   </table>
   <p class="note">三个滑块 0–100% 实时改对应 <code>GainNode.gain</code>；背景音乐额外经 <code>Music.setMusicVol</code> 做淡变，避免拖拽爆音。三条总线在 <code>initAudio</code> 内一次性建好并挂在 <code>destination</code> 下，未出声时改音量也立即生效。</p>
 
+  <h3>选关与难度</h3>
+  <p>起始页提供<strong>层数下拉</strong>（<code>#startLevel</code>，可选第 1–30 裂片），玩家直接选择要进入的层数，"进入裂片"即按所选层刷怪；<code>unlocked</code> 记录已抵达的最高层（过关时自动 +1），下拉中未抵达的层标注"（未抵达）"。</p>
+  <p>难度为三档，倍率<strong>叠加在关卡倍率之上</strong>（关卡倍率随层数增长：<code>hpMul = 1+(lv-1)×0.2</code>、<code>dmgMul = 1+(lv-1)×0.1</code>、<code>spdMul = min(1.5, 1+(lv-1)×0.045)</code>）：</p>
+  <table>
+    <thead><tr><th style="width:150px">难度</th><th>敌人血量</th><th>敌人伤害</th><th>敌人速度</th></tr></thead>
+    <tbody>
+      <tr><td><strong>轻松</strong></td><td class="num">×0.75</td><td class="num">×0.60</td><td class="num">×0.90</td></tr>
+      <tr><td><strong>普通</strong>（默认）</td><td class="num">×1.00</td><td class="num">×1.00</td><td class="num">×1.00</td></tr>
+      <tr><td><strong>困难</strong></td><td class="num">×1.35</td><td class="num">×1.50</td><td class="num">×1.12</td></tr>
+    </tbody>
+  </table>
+  <p class="note">难度倍率在 <code>spawnWave</code> 内合成进关卡倍率，因此对新生成的敌人（含统领召唤的小怪）立即生效；已存在的敌人保留原有数值。HUD 区域栏在非"普通"难度时追加难度名。</p>
+
+  <h3>角色属性</h3>
+  <div class="kv">
+    <div class="k">生命上限</div><div>50–400（步进 10）。即时写入 <code>hero.maxHp</code>；提高上限时按差额同步回补当前生命，降低时按新上限截断。</div>
+    <div class="k">体力上限</div><div>50–300（步进 10）。规则同上，写入 <code>hero.maxSt</code>，影响闪避与重击的消耗判定。</div>
+    <div class="k">攻击力</div><div>25–300%（步进 5），100% 为原值。乘算在<strong>三条伤害路径</strong>上：普攻/重击 <code>resolveHit</code>、指令技 <code>skillHit</code>、闪避穿袭；不影响破防值与击退。</div>
+  </div>
+  <p class="note">三项与难度、层数一并写入 <code>sr_settings_v1</code>；"恢复默认设置"会一并还原（进度 <code>unlocked</code> 除外，它随进度累积）。</p>
+
   <h3>操作手柄位置</h3>
-  <p>仅触屏可调整（虚拟摇杆 <code>#stick</code> + 动作键 <code>#abtns</code>），三种来源按优先级覆盖：</p>
+  <p>仅触屏可调整（虚拟摇杆 <code>#stick</code> + 动作键 <code>#abtns</code>）；桌面端整节隐藏（<code>body:not(.touch) .touchOnly</code>），避免出现无对象的空流程。三种来源按优先级覆盖：</p>
   <div class="kv">
     <div class="k">左手模式</div><div>勾选后摇杆移到右下、动作键移到左下，单手拇指操作更顺；会清空自定义坐标。</div>
-    <div class="k">拖拽编辑</div><div>点"编辑布局"进入可拖拽态，拖动两元件到合适位置后点"完成编辑"保存像素坐标；编辑态临时屏蔽摇杆/按键自身响应，避免误触。</div>
-    <div class="k">重置</div><div>"重置布局"恢复默认（右手、默认坐标）；"恢复默认设置"一键还原全部设置。</div>
+    <div class="k">拖拽编辑</div><div>三步流程：点"调整位置" → <strong>设置浮层自动关闭</strong>（露出摇杆与按键，附金色虚线高亮）→ 直接拖动 → 点浮层顶部浮动条的"保存位置"回到设置。浮动条另含"重置"（回默认坐标，可继续拖）与"取消"（还原进入编辑前的布局）。编辑态暂停游戏并屏蔽摇杆/按键自身响应，避免误触；Esc 等同取消。</div>
+    <div class="k">重置</div><div>"重置位置"恢复默认（右手、默认坐标）；"恢复默认设置"一键还原全部设置。</div>
   </div>
+  <p class="note">拖拽采用指针事件 + 触摸双通道（部分移动端在 touch 序列中不派发 <code>pointermove</code>）；进入编辑时先把当前视觉位置固化为 <code>left/top</code>，保证"所见即所拖"，左手模式保存后也不会跳回默认位。</p>
 
   <h3>快捷技能栏</h3>
   <p>底部六槽（<code>#qbar</code>），每槽从"空 + 三武器全部技能"中下拉绑定一项，跨武器亦可绑：</p>
@@ -448,11 +470,11 @@
     <li><strong>释放</strong>：注入对应指令序列（cmdSeq + dashT）后走 <code>tryAttack</code>，与搓招同源、共享自动锁怪。</li>
     <li>空槽不渲染，整条 qbar 隐藏，不打扰纯搓招玩家。</li>
   </ul>
-  <p class="note">设置与快捷栏均经 <code>?m=settings</code> 逐帧自检：默认结构、三档音量独立读写、6 槽渲染与技能名、左手 / 自定义布局、localStorage 持久化、fireQuick 注入与跨武器提示——全部报告 SETTINGS-OK、errors=none。旧模式（sim/lock/map/stick/touch/audio）回归全绿，设置模块加载无副作用。</p>
+  <p class="note">设置与快捷栏均经 <code>?m=settings</code> 逐帧自检：默认结构、三档音量独立读写、6 槽渲染与技能名、左手 / 自定义布局、localStorage 持久化、fireQuick 注入与跨武器提示、<strong>手柄位置编辑全流程（关弹窗 → 浮条可见 → 真实 pointer 拖拽 → 保存后弹窗重开 → 取消还原）</strong>——全部报告 SETTINGS-OK、errors=none。旧模式（sim/lock/map/stick/touch/audio）回归全绿，设置模块加载无副作用。</p>
 </section>
 
 <footer>
-  碎境勇者 · 设计文档 v1.9 · 与可玩原型 index.html 同步<br>
+  碎境勇者 · 设计文档 v1.11 · 与可玩原型 index.html 同步<br>
   文档中的数值均为当前原型实测值，可直接调参验证。
 </footer>
 
