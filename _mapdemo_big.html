@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#05080f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>碎境勇者 · SHATTERED REALM</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden; background: #05080f;
+    touch-action: none; overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none;
+  }
+  body {
+    font-family: "Zpix", "Fusion Pixel 12px", "Courier New", "Microsoft YaHei", monospace;
+    color: #efe6d2; user-select: none; -webkit-font-smoothing: none;
+  }
+  #stage { position: fixed; inset: 0; }
+  #stage canvas {
+    display: block; width: 100%; height: 100%;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+  }
+  /* 暗角 + 扫描线，强化复古像素质感 */
+  #vignette {
+    position: fixed; inset: 0; pointer-events: none; z-index: 5;
+    background:
+      repeating-linear-gradient(0deg, rgba(0,0,0,0.16) 0px, rgba(0,0,0,0.16) 1px, transparent 1px, transparent 3px),
+      radial-gradient(ellipse at center, rgba(0,0,0,0) 45%, rgba(3,6,12,0.62) 100%);
+  }
+
+  .hud { position: fixed; z-index: 10; pointer-events: none; }
+  .panel {
+    background: rgba(9,14,24,0.78);
+    border: 2px solid #2c3b56;
+    box-shadow: 0 0 0 2px rgba(5,8,15,0.9), inset 0 0 12px rgba(80,150,255,0.08);
+  }
+
+  /* 左上：状态 */
+  #status { top: 18px; left: 18px; width: 268px; padding: 10px 12px 12px; }
+  #status .row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+  #status .row:last-child { margin-bottom: 0; }
+  .tag {
+    font-size: 10px; letter-spacing: 1px; color: #7d93b5; width: 34px; flex: none;
+  }
+  .bar {
+    position: relative; flex: 1; height: 11px; background: #1a2133;
+    border: 1px solid #34435e; overflow: hidden;
+  }
+  .bar > i {
+    display: block; height: 100%; width: 100%; transform-origin: left center;
+    transition: transform 0.08s linear;
+  }
+  #hpFill { background: linear-gradient(90deg, #d8455c, #f4715f); }
+  #stFill { background: linear-gradient(90deg, #3f8f6d, #7fd8a2); }
+  .num { font-size: 10px; color: #b9c8dd; width: 54px; text-align: right; flex: none; letter-spacing: 0.5px; }
+  #cmdLine {
+    margin-top: 8px; padding-top: 7px; border-top: 1px dashed #2c3b56;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    font-size: 11px; letter-spacing: 1px;
+  }
+  #cmdSeq {
+    font-size: 15px; letter-spacing: 3px; color: #ffd88a; min-width: 74px;
+    text-shadow: 0 0 8px rgba(255,216,138,0.35);
+  }
+  #cmdName { color: #5f718c; letter-spacing: 1px; text-align: right; }
+  #cmdName.on { color: #8ee6c0; text-shadow: 0 0 8px rgba(142,230,192,0.55); }
+  #ultLine {
+    margin-top: 8px; padding-top: 7px; border-top: 1px dashed #2c3b56;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 11px; letter-spacing: 1px;
+  }
+  #ultName { color: #b98ae0; text-shadow: 0 0 8px rgba(185,138,224,0.45); }
+  #ultCmd { font-size: 10px; color: #ffd88a; letter-spacing: 1px; }
+  #weaponLine {
+    margin-top: 9px; padding-top: 8px; border-top: 1px dashed #2c3b56;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  #weaponName { font-size: 13px; color: #ffd88a; letter-spacing: 1px; }
+  #comboWrap { font-size: 11px; color: #7d93b5; letter-spacing: 1px; }
+  #comboNum { color: #ffd88a; font-size: 13px; }
+
+  /* 顶部中央：目标 */
+  #objective {
+    top: 18px; left: 50%; transform: translateX(-50%);
+    text-align: center; padding: 7px 20px;
+  }
+  #region { font-size: 11px; letter-spacing: 3px; color: #6e86a8; }
+  #purify { font-size: 14px; letter-spacing: 1px; color: #d8e3f2; margin-top: 3px; }
+  #purify b { color: #8ee6c0; }
+
+  /* 中上：当前目标破防条 */
+  #targetFrame {
+    top: 92px; left: 50%; transform: translateX(-50%);
+    width: 260px; padding: 8px 10px; opacity: 0; transition: opacity 0.18s;
+  }
+  #targetFrame.on { opacity: 1; }
+
+  /* 右上：透明小地图（标记怪物位置） */
+  #minimap {
+    top: 18px; right: 18px; width: 132px; height: 132px;
+    opacity: 0.95; border-radius: 50%;
+  }
+  #minimap canvas {
+    display: block; width: 100%; height: 100%; border-radius: 50%;
+    image-rendering: pixelated; image-rendering: -moz-crisp-edges; image-rendering: crisp-edges;
+  }
+  @media (max-width: 620px) {
+    #minimap { width: 104px; height: 104px; top: 14px; right: 14px; }
+  }
+  #targetName { font-size: 11px; letter-spacing: 2px; color: #ffb0a0; margin-bottom: 5px; display: flex; justify-content: space-between; }
+  #targetName span:last-child { color: #7d93b5; }
+  .brkBar { height: 7px; background: #241a1a; border: 1px solid #4a3131; overflow: hidden; }
+  #targetFill { display: block; height: 100%; width: 100%; transform-origin: left center; background: linear-gradient(90deg, #ff9a3c, #ffe06b); }
+
+  /* 底部：按键 */
+  #controls {
+    bottom: 16px; left: 18px; padding: 9px 12px;
+    display: flex; gap: 14px; flex-wrap: wrap; max-width: 620px;
+  }
+  .key { font-size: 11px; color: #93a7c4; letter-spacing: 0.5px; white-space: nowrap; }
+  .key b {
+    display: inline-block; min-width: 18px; text-align: center;
+    padding: 1px 5px; margin-right: 5px;
+    background: #1d2739; border: 1px solid #3b4c69; color: #e8dcc0;
+    font-weight: normal;
+  }
+
+  /* 提示 */
+  #toast {
+    position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%);
+    z-index: 12; font-size: 14px; letter-spacing: 2px; color: #ffe9b0;
+    text-shadow: 0 0 10px rgba(255,190,80,0.55), 2px 2px 0 #000;
+    opacity: 0; transition: opacity 0.25s; pointer-events: none;
+  }
+  #toast.on { opacity: 1; }
+
+  /* 开场 / 通关 */
+  .screen {
+    position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 18px;
+    background:
+      radial-gradient(ellipse at 50% 40%, rgba(28,44,72,0.92), rgba(4,7,13,0.98)),
+      repeating-linear-gradient(0deg, rgba(120,170,255,0.05) 0 1px, transparent 1px 4px);
+    text-align: center; padding: 24px;
+  }
+  .screen.hide { display: none; }
+  .logo { font-size: 46px; letter-spacing: 12px; color: #f4e3bd; text-shadow: 4px 4px 0 #1b2438, 0 0 30px rgba(255,200,110,0.35); }
+  .logo small { display: block; font-size: 12px; letter-spacing: 7px; color: #6d86ab; margin-top: 12px; text-shadow: none; }
+  .sub { font-size: 13px; letter-spacing: 2px; color: #9db1cc; line-height: 2.1; max-width: 520px; }
+  .sub em { color: #ffd88a; font-style: normal; }
+  .btn {
+    margin-top: 6px; padding: 11px 34px; font-size: 15px; letter-spacing: 4px;
+    color: #121a26; background: #ffd88a; border: none; cursor: pointer;
+    font-family: inherit; box-shadow: 4px 4px 0 #7a5a22; transition: transform 0.08s;
+  }
+  .btn:hover { transform: translate(1px,1px); box-shadow: 3px 3px 0 #7a5a22; }
+  .legend { display: flex; gap: 22px; font-size: 11px; color: #8ea4c2; letter-spacing: 1px; margin-top: 4px; flex-wrap: wrap; justify-content: center; }
+  .legend span { padding: 2px 8px; border: 1px solid #33445f; }
+
+  /* ================= 移动端触屏 UI ================= */
+  #touchUI {
+    position: fixed; inset: 0; z-index: 15; pointer-events: none;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  #touchUI > * { pointer-events: auto; }
+
+  /* 左下：虚拟摇杆（模拟量移动 + 四象限搓招） */
+  #stick {
+    position: absolute; left: 14px; bottom: 18px; width: 176px; height: 176px;
+    touch-action: none; user-select: none; -webkit-user-select: none;
+  }
+  #stick .ring {
+    position: absolute; left: 13px; top: 13px; width: 150px; height: 150px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(16,24,40,0.55) 0%, rgba(10,16,28,0.72) 70%, rgba(10,16,28,0.85) 100%);
+    border: 2px solid #3b4c69;
+    box-shadow: 3px 3px 0 rgba(5,8,15,0.65), inset 0 0 14px rgba(80,150,255,0.10);
+    transition: border-color 0.12s, box-shadow 0.12s;
+  }
+  #stick.on .ring {
+    border-color: #7fa8e0;
+    box-shadow: 3px 3px 0 rgba(5,8,15,0.65), inset 0 0 18px rgba(140,200,255,0.22);
+  }
+  /* 四向刻度：提示搓招方向，对应方向激活时高亮 */
+  #stick .tick {
+    position: absolute; width: 22px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: #63799c; transition: color 0.1s, text-shadow 0.1s;
+  }
+  #stick .tick.on { color: #ffe9b0; text-shadow: 0 0 8px rgba(255,220,140,0.8); }
+  #stick .tick.tu { left: 77px; top: 8px; }
+  #stick .tick.td { left: 77px; bottom: 8px; }
+  #stick .tick.tl { left: 8px; top: 77px; }
+  #stick .tick.tr { right: 8px; top: 77px; }
+  #stick .knob {
+    position: absolute; left: 61px; top: 61px; width: 54px; height: 54px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, rgba(96,132,184,0.95), rgba(30,46,74,0.95));
+    border: 2px solid #8fa8cc;
+    box-shadow: 3px 3px 0 rgba(5,8,15,0.65), inset 0 0 10px rgba(160,210,255,0.25);
+    transition: transform 0.09s ease-out;
+    pointer-events: none;
+  }
+  #stick.on .knob { transition: none; background: radial-gradient(circle at 35% 30%, rgba(255,232,176,0.98), rgba(120,92,40,0.95)); border-color: #ffe9b0; }
+
+  /* 右下：动作键 */
+  #abtns { position: absolute; right: 16px; bottom: 18px; width: 300px; height: 210px; }
+  #abtns .abtn {
+    position: absolute; border-radius: 50%;
+    background: rgba(13,20,34,0.72); border: 2px solid #3b4c69;
+    box-shadow: 3px 3px 0 rgba(5,8,15,0.65), inset 0 0 12px rgba(80,150,255,0.10);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 12px; letter-spacing: 1px; color: #cfdaea; touch-action: none; user-select: none;
+    line-height: 1.25; text-align: center;
+  }
+  #abtns .abtn small { font-size: 8px; color: #7d93b5; letter-spacing: 0; }
+  #abtns .abtn.press {
+    background: rgba(52,78,120,0.85); color: #ffe9b0; transform: translate(2px,2px);
+    box-shadow: 1px 1px 0 rgba(5,8,15,0.65), inset 0 0 14px rgba(255,220,140,0.22);
+  }
+  #bLight  { right: 104px; bottom: 0; width: 76px; height: 76px; font-size: 14px;
+             color: #ffe9b0; border-color: #8a6b2f; background: rgba(64,48,18,0.78); }
+  #bHeavy  { right: 16px; bottom: 0; width: 76px; height: 76px; font-size: 14px;
+             color: #ffc4a8; border-color: #8a4030; background: rgba(66,26,18,0.78); }
+  #bDodge  { right: 16px; bottom: 88px; width: 60px; height: 60px;
+             color: #aee6ff; border-color: #2f6480; background: rgba(16,44,64,0.78); }
+  #bGuard  { right: 244px; bottom: 96px; width: 50px; height: 50px; font-size: 11px;
+             color: #a9f0cc; border-color: #2f7a58; background: rgba(16,52,36,0.78); }
+  #bSwap   { right: 186px; bottom: 96px; width: 50px; height: 50px; font-size: 11px;
+             color: #d9b6f2; border-color: #64408a; background: rgba(40,22,60,0.78); }
+  #bHeal   { right: 128px; bottom: 96px; width: 50px; height: 50px; font-size: 11px;
+             color: #9ff2ff; border-color: #2f6a80; background: rgba(16,44,58,0.78); }
+
+  /* 全屏按钮（触屏） */
+  #fsBtn {
+    display: none; position: fixed; top: calc(10px + env(safe-area-inset-top)); right: 10px; z-index: 20;
+    width: 34px; height: 34px; padding: 0;
+    background: rgba(9,14,24,0.78); border: 2px solid #2c3b56; color: #b9c8dd;
+    font-size: 15px; cursor: pointer; font-family: inherit;
+  }
+  body.touch #fsBtn { display: block; }
+
+  /* 竖屏提示 */
+  #rotateHint {
+    display: none; position: fixed; inset: 0; z-index: 40;
+    flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+    background: rgba(4,7,13,0.9); color: #ffd88a;
+    font-size: 16px; letter-spacing: 4px; text-align: center; pointer-events: none;
+  }
+  #rotateHint .ric { font-size: 44px; animation: rot 2.4s linear infinite; }
+  @keyframes rot { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  @media (orientation: portrait) and (max-width: 620px) {
+    #rotateHint { display: flex; }
+    /* 竖屏下目标面板右移，避免与左上状态面板重叠 */
+    #objective { left: auto; right: 10px; transform: none; max-width: 46%; padding: 5px 10px; }
+    #targetFrame { top: 64px; }
+  }
+
+  /* 桌面端隐藏触屏 UI；触屏端隐藏键盘图例 */
+  body:not(.touch) #touchUI { display: none; }
+  body.touch #controls { display: none; }
+  #mobSub { display: none; }
+  body.touch #mobSub { display: block; }
+
+  /* 窄屏 / 低矮屏：HUD 缩放让位触屏 */
+  @media (max-width: 900px), (max-height: 560px) {
+    #status { top: 10px; left: 10px; width: 208px; padding: 8px 10px 9px; transform: scale(0.9); transform-origin: top left; }
+    #status .row { margin-bottom: 5px; }
+    #cmdSeq { font-size: 13px; min-width: 60px; }
+    #weaponName { font-size: 12px; }
+    #objective { top: 10px; padding: 5px 12px; }
+    #region { font-size: 10px; letter-spacing: 2px; }
+    #purify { font-size: 11px; margin-top: 2px; }
+    #targetFrame { top: 72px; width: 216px; }
+    #toast { bottom: 216px; font-size: 12px; letter-spacing: 1px; }
+    .logo { font-size: 32px; letter-spacing: 7px; }
+    .sub { font-size: 12px; line-height: 1.9; }
+  }
+  @media (max-width: 420px) {
+    #abtns { transform: scale(0.88); transform-origin: bottom right; }
+    #stick { transform: scale(0.88); transform-origin: bottom left; }
+  }
+</style>
+<style>#minimap{width:420px!important;height:420px!important;top:18px!important;right:18px!important;}</style></head>
+<body>
+  <div id="stage"></div>
+  <div id="vignette"></div>
+
+  <div id="status" class="hud panel">
+    <div class="row">
+      <div class="tag">生命</div>
+      <div class="bar"><i id="hpFill"></i></div>
+      <div class="num" id="hpText">100/100</div>
+    </div>
+    <div class="row">
+      <div class="tag">体力</div>
+      <div class="bar"><i id="stFill"></i></div>
+      <div class="num" id="stText">100</div>
+    </div>
+    <div id="cmdLine">
+      <div id="cmdSeq">—</div>
+      <div id="cmdName"></div>
+    </div>
+    <div id="weaponLine">
+      <div id="weaponName">裂空剑</div>
+      <div id="comboWrap">连段 <span id="comboNum">0</span> / 3</div>
+    </div>
+    <div id="ultLine">
+      <div id="ultName">万剑归宗</div>
+      <div id="ultCmd">␣↓↓ + 右键</div>
+    </div>
+  </div>
+
+  <div id="objective" class="hud panel">
+    <div id="region">碎境大陆 · 苔原裂片</div>
+    <div id="purify">剩余侵蚀体 <b id="killCount">0</b> · 第 <b id="levelNum">1</b> 裂片 · 分数 <b id="scoreNum">0</b></div>
+  </div>
+
+  <div id="targetFrame" class="hud panel">
+    <div id="targetName"><span id="targetLabel">苔原史莱姆</span><span id="targetHp">40</span></div>
+    <div class="brkBar"><i id="targetFill"></i></div>
+  </div>
+
+  <!-- 右上：透明小地图 -->
+  <div id="minimap" class="hud"><canvas id="minimapCanvas" width="132" height="132"></canvas></div>
+
+  <div id="controls" class="hud panel">
+    <div class="key"><b>WASD</b>移动</div>
+    <div class="key"><b>左键</b>轻击连段</div>
+    <div class="key"><b>右键</b>重击破防</div>
+    <div class="key"><b>↑↑</b><b>↑↓</b><b>↓↑</b><b>↓↓</b> + 攻击 = 指令技</div>
+    <div class="key"><b>空格</b>闪避翻滚</div>
+    <div class="key"><b>Shift</b>格挡/弹反</div>
+    <div class="key"><b>Q</b>换武器</div>
+    <div class="key"><b>E</b>锚点治疗</div>
+  </div>
+
+  <!-- 移动端触屏：虚拟摇杆 + 动作键 -->
+  <div id="touchUI">
+    <div id="stick">
+      <div class="ring"></div>
+      <div class="tick tu" data-dir="u">▲</div>
+      <div class="tick td" data-dir="d">▼</div>
+      <div class="tick tl" data-dir="l">◀</div>
+      <div class="tick tr" data-dir="r">▶</div>
+      <div class="knob" id="stickKnob"></div>
+    </div>
+    <div id="abtns">
+      <div class="abtn" id="bLight">轻击<small>连段</small></div>
+      <div class="abtn" id="bHeavy">重击<small>破防</small></div>
+      <div class="abtn" id="bDodge">闪避<small>完美反击</small></div>
+      <div class="abtn" id="bGuard">格挡</div>
+      <div class="abtn" id="bSwap">换武</div>
+      <div class="abtn" id="bHeal">治疗</div>
+    </div>
+  </div>
+  <button id="fsBtn" title="全屏">⛶</button>
+
+  <div id="rotateHint">
+    <div class="ric">↻</div>
+    <div>请横屏游玩</div>
+    <div style="font-size:11px;color:#8ea4c2;letter-spacing:2px;">ROTATE YOUR DEVICE</div>
+  </div>
+
+  <div id="toast"></div>
+
+  <div id="startScreen" class="screen">
+    <div class="logo">碎境勇者<small>SHATTERED REALM · 三维像素动作冒险</small></div>
+    <div class="sub">
+      大陆碎裂成悬浮的残片。<em>你是唯一还能踏过裂痕的人。</em><br>
+      三种武器各有自己的动作与节奏：剑横扫、斧劈砍、枪突刺。<br>
+      <em>方向连打 + 攻击键</em>释放指令技——↑↑ 突进、↑↓ 回身、↓↑ 上挑、↓↓ 砸地，<em>空格+↓↓+右键</em>出终极。<br>
+      手机端用左下<em>虚拟摇杆</em>：拨动即走，往上下快速回中再拨即可搓招。<br>
+      <em>右上角小地图</em>实时标记场上怪物——被包围时看一眼就知道该往哪撤。<br>
+      <em>完美闪避</em>触发反击窗口，翻滚<em>穿过</em>敌人可直接造成伤害。<br>
+      每净化一块裂片就会前往更深的下一块——弩手、统领在深处等你。
+    </div>
+    <div class="legend">
+      <span>剑 · 万剑归宗</span><span>斧 · 陨石天降</span><span>枪 · 横扫千军</span><span>指令技 · 七式</span><span>完美闪避 · 反击</span>
+    </div>
+    <button class="btn" id="startBtn">进 入 裂 片</button>
+  </div>
+
+  <div id="winScreen" class="screen hide">
+    <div class="logo" style="font-size:34px;">裂片已净化<small>SHARD PURIFIED</small></div>
+    <div class="sub" id="winText">你击碎了这片区域的侵蚀…但更深的裂境仍在震动。</div>
+    <button class="btn" id="againBtn">前 往 下 一 裂 片</button>
+  </div>
+
+  <script src="three.min.js"></script>
+  <script>window.__errs=[];window.onerror=function(m,s,l,c){window.__errs.push(m+" @ "+String(s).split("/").pop()+":"+l);return false;};</script>
+<script src="game.js"></script>
+  <div id="errBox" style="position:fixed;left:0;right:0;bottom:0;z-index:99;display:none;background:#5a1414;color:#ffdede;font-size:11px;padding:6px;white-space:pre-wrap;font-family:monospace"></div>
+  <script>
+    window.addEventListener('error', function (e) {
+      var b = document.getElementById('errBox');
+      b.style.display = 'block';
+      b.textContent += e.message + ' @ ' + String(e.filename || '').split('/').pop() + ':' + e.lineno + '\n';
+    });
+  </script>
+<script>window.addEventListener("load",function(){setTimeout(function(){try{  var S=window.__SR;  S.manual=true;  S.start();  S.clearField();  var layout=[    ["slime",-9,7],["slime",-4,-8],["slime",6,-10],    ["stone",10,4],["stone",13,-3],    ["archer",-12,-11],["elite",15,12]  ];  for(var i=0;i<layout.length;i++){    var e=S.spawn(layout[i][0],layout[i][1],layout[i][2],{hpMul:1,dmgMul:1,spdMul:1});    e.pos.set(layout[i][1],0,layout[i][2]);e.state="idle";e.stateT=0;  }  S.hero.pos.set(0,0,0);S.hero.facing=0;S.hero.state="idle";  S.hud(0.016);  var t=["map-demo blips="+S.mmBlips().length];  t.push("errors="+(window.__errs.join(" | ")||"none"));  var x=new XMLHttpRequest();x.open("POST","/report",true);x.send(t.join("\n"));}catch(e){  var x2=new XMLHttpRequest();x2.open("POST","/report",true);x2.send("map-demo ERROR "+e.message);}},300);});</script></body>
+</html>
