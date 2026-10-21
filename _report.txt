@@ -1,12 +1,8 @@
-errs=
-typeofSR=object openSettings=function start=function
-afterStart running=true
-panelHidden=false
-viewport=826x238
-panelRect=133,10 560x218
-panel scrollH=704 clientH=214 overflowY=auto maxH=218px
-overlay scrollH=238 clientH=238
-foot=171..226 面板底=228 首屏可见=true
-lastQRow bottom=651 超出面板=true
-select=305..331 footBg=rgb(10, 16, 26) footZ=3 footPos=sticky
-footer顶探针命中=DIV.setFoot#
+viewport=504x692
+panel=464x620 scrollH=849 clientH=616
+可滚动=true
+touch-action html=auto body=auto #stage=none #settings=pan-y panel=pan-y
+面板内 touchmove 被 preventDefault=false
+画布上 touchmove 被 preventDefault=true
+滚动后 scrollTop=233 / max=233
+吸底「完成」=585..654 面板底=656 可见=true

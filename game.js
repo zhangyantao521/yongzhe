@@ -2083,7 +2083,12 @@
   if (IS_TOUCH) document.body.classList.add('touch');
 
   // 阻止移动端手势缩放 / 下拉刷新 / 双击放大
-  document.addEventListener('touchmove', function (e) { if (e.cancelable) e.preventDefault(); }, { passive: false });
+  // 例外：浮层（设置 / 起始页 / 结算）内部需要原生纵向滚动，命中 .screen 时放行
+  document.addEventListener('touchmove', function (e) {
+    var t = e.target;
+    if (t && t.closest && t.closest('.screen')) return;
+    if (e.cancelable) e.preventDefault();
+  }, { passive: false });
   document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
   document.addEventListener('dblclick', function (e) { e.preventDefault(); }, { passive: false });
 
