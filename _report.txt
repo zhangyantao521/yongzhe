@@ -1,1 +1,18 @@
-up=22,35,51,161 dn=27,29,29,201 ctr=255,216,138,255
+level=1 enemies=7
+--- audio / music / voice self-check ---
+audioOn=true playing=true mode=adventure
+scheduled=2 (>=1)
+mode=adventure (expect adventure)
+muted=false (expect false)
+setMusicMode(boss) -> mode=boss (expect boss)
+levelCfg(5).boss=1 (expect 1)
+levelCfg(4).boss=0 (expect 0)
+boss type=boss alive=true
+bossActive=true mode=boss (expect true/boss)
+after boss dead mode=adventure (expect adventure)
+shoutCount=1 (>0)
+voxFired=1 (>0)
+toggleMusic -> muted=true
+AUDIO-OK
+check=ok
+errors=none

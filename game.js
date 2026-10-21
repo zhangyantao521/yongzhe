@@ -12,7 +12,7 @@
 
   /* ------------------------- 关卡进度 ------------------------- */
   const REGION_NAMES = ['苔原裂片', '风蚀裂片', '黯晶裂片', '熔核裂片', '虚空裂片'];
-  const ENEMY_LABEL = { slime: '苔原史莱姆', stone: '裂境守卫', archer: '裂境弩手', elite: '裂境统领' };
+  const ENEMY_LABEL = { slime: '苔原史莱姆', stone: '裂境守卫', archer: '裂境弩手', elite: '裂境统领', boss: '碎境魔将' };
   let level = 1;
   let score = 0;
   let levelKills = 0;
@@ -780,6 +780,20 @@
       { name: '瞬影斩', cmd: 'ku', btn: 'light', kind: 'rush', pose: 'rush', dur: 0.6, cost: 10,
         moves: [{ a: 0.10, b: 0.5, dist: 2.6 }],
         hits: [{ at: 0.36, range: 2.9, arc: 0.8, dmg: 16, brk: 14, kb: 0.3, vfx: 'wave' }] },
+      { name: '十字燕返', cmd: 'lr', btn: 'light', kind: 'combo', pose: 'side', dur: 0.92, cost: 12,
+        moves: [{ a: 0.10, b: 0.86, dist: 3.2 }],
+        hits: [
+          { at: 0.32, range: 2.9, arc: 2.0, dmg: 13, brk: 12, kb: 0.3 },
+          { at: 0.74, range: 3.0, arc: 2.2, dmg: 17, brk: 16, kb: 0.45 }
+        ] },
+      { name: '回风斩', cmd: 'rl', btn: 'light', kind: 'back', pose: 'back', dur: 0.84, cost: 12,
+        moves: [{ a: 0.08, b: 0.40, dist: -1.8 }, { a: 0.48, b: 0.66, dist: 3.0 }],
+        hits: [{ at: 0.60, range: 2.9, arc: 2.4, dmg: 20, brk: 18, kb: 0.4, vfx: 'wave' }] },
+      { name: '断流横断', cmd: 'll', btn: 'heavy', kind: 'sweep', pose: 'side', dur: 1.02, cost: 24,
+        hits: [
+          { at: 0.36, range: 3.4, arc: 4.6, dmg: 22, brk: 22, kb: 0.35 },
+          { at: 0.78, range: 3.6, arc: 4.8, dmg: 22, brk: 22, kb: 0.45 }
+        ] },
       { name: '万剑归宗', cmd: 'kdd', btn: 'heavy', kind: 'rain', dur: 1.85, cost: 35, ult: true,
         hits: [{ at: 0.52, range: 6.8, arc: 6.28, dmg: 60, brk: 55, kb: 0.75 }] }
     ],
@@ -810,6 +824,20 @@
       { name: '瞬影砸', cmd: 'ku', btn: 'light', kind: 'slam', pose: 'slam', dur: 0.74, cost: 12,
         moves: [{ a: 0.10, b: 0.5, dist: 2.2 }],
         hits: [{ at: 0.6, range: 3.0, arc: 3.14, dmg: 20, brk: 20, kb: 0.6, vfx: 'crack' }] },
+      { name: '横断双挥', cmd: 'lr', btn: 'light', kind: 'combo', pose: 'side', dur: 0.98, cost: 16,
+        moves: [{ a: 0.12, b: 0.90, dist: 2.8 }],
+        hits: [
+          { at: 0.34, range: 2.7, arc: 2.2, dmg: 17, brk: 17, kb: 0.35 },
+          { at: 0.70, range: 2.8, arc: 2.4, dmg: 23, brk: 23, kb: 0.6 }
+        ] },
+      { name: '拖斧反斩', cmd: 'rl', btn: 'light', kind: 'back', pose: 'back', dur: 0.92, cost: 16,
+        moves: [{ a: 0.10, b: 0.44, dist: -2.0 }, { a: 0.52, b: 0.70, dist: 3.2 }],
+        hits: [{ at: 0.64, range: 3.1, arc: 2.6, dmg: 26, brk: 26, kb: 0.6, vfx: 'wave' }] },
+      { name: '横断山岳', cmd: 'll', btn: 'heavy', kind: 'sweep', pose: 'side', dur: 1.14, cost: 28,
+        hits: [
+          { at: 0.38, range: 3.8, arc: 5.2, dmg: 23, brk: 24, kb: 0.4 },
+          { at: 0.80, range: 3.9, arc: 5.4, dmg: 23, brk: 24, kb: 0.55 }
+        ] },
       { name: '陨石天降', cmd: 'kdd', btn: 'heavy', kind: 'leap', dur: 1.75, cost: 35, ult: true,
         hits: [{ at: 0.64, range: 5.2, arc: 6.28, dmg: 88, brk: 80, kb: 1.0 }] }
     ],
@@ -838,6 +866,20 @@
       { name: '瞬影刺', cmd: 'ku', btn: 'light', kind: 'rush', pose: 'rush', dur: 0.58, cost: 10,
         moves: [{ a: 0.10, b: 0.5, dist: 3.0 }],
         hits: [{ at: 0.34, range: 3.3, arc: 0.55, dmg: 14, brk: 12, kb: 0.25, vfx: 'wave' }] },
+      { name: '双横抹月', cmd: 'lr', btn: 'light', kind: 'combo', pose: 'side', dur: 0.88, cost: 10,
+        moves: [{ a: 0.10, b: 0.84, dist: 3.0 }],
+        hits: [
+          { at: 0.32, range: 3.2, arc: 1.8, dmg: 11, brk: 10, kb: 0.25 },
+          { at: 0.72, range: 3.3, arc: 2.0, dmg: 15, brk: 14, kb: 0.45 }
+        ] },
+      { name: '侧返枪', cmd: 'rl', btn: 'light', kind: 'back', pose: 'back', dur: 0.82, cost: 12,
+        moves: [{ a: 0.08, b: 0.42, dist: -2.2 }, { a: 0.48, b: 0.64, dist: 3.4 }],
+        hits: [{ at: 0.58, range: 3.5, arc: 2.0, dmg: 22, brk: 16, kb: 0.4, vfx: 'wave' }] },
+      { name: '横断江', cmd: 'll', btn: 'heavy', kind: 'sweep', pose: 'side', dur: 0.98, cost: 24,
+        hits: [
+          { at: 0.36, range: 3.7, arc: 4.8, dmg: 22, brk: 20, kb: 0.3 },
+          { at: 0.78, range: 3.8, arc: 5.0, dmg: 22, brk: 20, kb: 0.45 }
+        ] },
       { name: '横扫千军', cmd: 'kdd', btn: 'heavy', kind: 'spinU', dur: 1.65, cost: 35, ult: true,
         hits: [
           { at: 0.20, range: 5.2, arc: 6.28, dmg: 28, brk: 24, kb: 0.06 },
@@ -1149,10 +1191,58 @@
     { t: 1.00, arx: 0, ary: 0.15, by: 0, rx: 0 }
   ]);
 
+  /* —— 横向连招姿态（←→ 系指令技）—— */
+  // 剑·十字燕返（→←轻）：两段交叉横斩，腰马带动剑身水平掠过
+  const P_SK_SWORD_SIDE = bakePose([
+    { t: 0.00, ary: 0.15, arx: -0.12 },
+    { t: 0.14, ary: 1.55, arx: -0.35, by: -0.42, rx: -0.06 },
+    { t: 0.32, ary: -1.45, arx: 0.08, by: 0.44, rx: 0.12, pz: 0.10 },
+    { t: 0.48, ary: 1.35, arx: -0.30, by: -0.38, rx: -0.05 },
+    { t: 0.62, ary: -1.60, arx: 0.10, by: 0.48, rx: 0.14, pz: 0.12 },
+    { t: 0.74, ary: -1.95, arx: 0.18, by: 0.58, rx: 0.16, pz: 0.14 },
+    { t: 1.00, ary: 0.15, arx: -0.12, by: 0, rx: 0, pz: 0 }
+  ]);
+  // 剑·回风斩（←→轻）：收势后沉，反手横割
+  const P_SK_SWORD_BACK = bakePose([
+    { t: 0.00, ary: 0.15, arx: -0.12 },
+    { t: 0.14, pz: -0.35, ary: 0.90, arx: -0.20, by: -0.25, rx: -0.08 },
+    { t: 0.30, pz: -0.40, ary: 1.20, arx: -0.25, by: -0.35 },
+    { t: 0.50, ary: -1.50, arx: 0.05, by: 0.45, rx: 0.12, pz: 0.30, rz: 0.10 },
+    { t: 0.72, ary: -1.80, arx: 0.12, by: 0.52, pz: 0.35 },
+    { t: 1.00, ary: 0.15, arx: -0.12, by: 0, rx: 0, rz: 0, pz: 0 }
+  ]);
+  // 斧·横断双挥（→←轻）：双臂开合，斧刃水平横扫两段
+  const P_SK_AXE_SIDE = bakePose([
+    { t: 0.00, ary: 0.10, arx: -0.20 },
+    { t: 0.14, ary: 1.70, arx: -0.55, alx: -1.45, aly: 0.45, by: -0.48, rx: -0.10 },
+    { t: 0.34, ary: -1.50, arx: 0.15, alx: -0.25, aly: -0.40, by: 0.50, rx: 0.16, pz: 0.12 },
+    { t: 0.50, ary: 1.45, arx: -0.50, alx: -1.35, aly: 0.40, by: -0.42, rx: -0.08 },
+    { t: 0.70, ary: -1.85, arx: 0.20, alx: -0.30, aly: -0.45, by: 0.58, rx: 0.20, pz: 0.16 },
+    { t: 1.00, ary: 0.10, arx: -0.12, alx: 0, aly: 0, by: 0, rx: 0, pz: 0 }
+  ]);
+  // 斧·拖斧反斩（←→轻）：拖步后撤，反手撩斩
+  const P_SK_AXE_BACK = bakePose([
+    { t: 0.00, ary: 0.10, arx: -0.20 },
+    { t: 0.14, pz: -0.40, ary: 1.00, arx: -0.35, alx: -0.90, by: -0.32, rx: -0.12 },
+    { t: 0.32, pz: -0.45, ary: 1.30, arx: -0.40, alx: -1.05, by: -0.40 },
+    { t: 0.54, ary: -1.55, arx: 0.25, alx: -0.35, by: 0.52, rx: 0.18, pz: 0.32, rz: 0.12 },
+    { t: 0.76, ary: -1.85, arx: 0.30, by: 0.60, pz: 0.38 },
+    { t: 1.00, ary: 0.10, arx: -0.12, alx: 0, by: 0, rx: 0, rz: 0, pz: 0 }
+  ]);
+  // 枪·双横抹（→←轻）：枪身水平抹过，两段交叉
+  const P_SK_SPEAR_SIDE = bakePose([
+    { t: 0.00, arx: -0.10, ary: 0.10, pz: 0, wz: 0 },
+    { t: 0.14, arx: -0.05, ary: 1.50, pz: 0.30, wz: 0.55, by: -0.46, rx: -0.08 },
+    { t: 0.32, arx: -0.15, ary: -1.45, pz: 0.38, wz: 0.68, by: 0.48, rx: 0.14 },
+    { t: 0.50, arx: -0.05, ary: 1.35, pz: 0.32, wz: 0.58, by: -0.42, rx: -0.06 },
+    { t: 0.72, arx: -0.20, ary: -1.75, pz: 0.46, wz: 0.82, by: 0.56, rx: 0.18 },
+    { t: 1.00, arx: 0, ary: 0.15, pz: 0, wz: 0, by: 0, rx: 0 }
+  ]);
+
   const SKILL_POSES = [
-    { combo: P_SK_SWORD_COMBO, spin: P_SK_SWORD_SPIN, upper: P_SK_SWORD_UPPER, rush: P_SK_SWORD_RUSH, slam: P_SK_SWORD_SLAM, ult: P_SWORD_ULT },
-    { combo: P_SK_AXE_COMBO, spin: P_SK_AXE_SPIN, upper: P_SK_AXE_UPPER, rush: P_SK_AXE_RUSH, slam: P_SK_AXE_SLAM, ult: P_AXE_ULT },
-    { combo: P_SK_SPEAR_COMBO, back: P_SK_SPEAR_BACK, upper: P_SK_SPEAR_UPPER, rush: P_SK_SPEAR_RUSH, sweep: P_SK_SPEAR_SWEEP, ult: P_SPEAR_ULT }
+    { combo: P_SK_SWORD_COMBO, spin: P_SK_SWORD_SPIN, upper: P_SK_SWORD_UPPER, rush: P_SK_SWORD_RUSH, slam: P_SK_SWORD_SLAM, side: P_SK_SWORD_SIDE, back: P_SK_SWORD_BACK, ult: P_SWORD_ULT },
+    { combo: P_SK_AXE_COMBO, spin: P_SK_AXE_SPIN, upper: P_SK_AXE_UPPER, rush: P_SK_AXE_RUSH, slam: P_SK_AXE_SLAM, side: P_SK_AXE_SIDE, back: P_SK_AXE_BACK, ult: P_AXE_ULT },
+    { combo: P_SK_SPEAR_COMBO, back: P_SK_SPEAR_BACK, upper: P_SK_SPEAR_UPPER, rush: P_SK_SPEAR_RUSH, sweep: P_SK_SPEAR_SWEEP, side: P_SK_SPEAR_SIDE, ult: P_SPEAR_ULT }
   ];
 
   // 静态姿态
@@ -1220,7 +1310,8 @@
     slime: { hp: 42, spd: 2.2, reach: 1.55, windup: 0.46, dmg: 9, r: 0.6, size: 0.85, brk: 60, color: 0x63c9a0, eye: 0x11212b, barH: 1.5 },
     stone: { hp: 160, spd: 1.5, reach: 2.0, windup: 0.62, dmg: 18, r: 0.72, size: 1.0, brk: 120, color: 0x8b8fa0, eye: 0xff7a4a, barH: 2.55 },
     archer: { hp: 34, spd: 2.7, reach: 1.2, windup: 0.55, dmg: 11, r: 0.55, size: 0.8, brk: 45, color: 0xc9a05e, eye: 0x2a1a0a, barH: 1.5 },
-    elite: { hp: 300, spd: 1.75, reach: 2.7, windup: 0.72, dmg: 24, r: 1.15, size: 1.55, brk: 170, color: 0x7a4a8f, eye: 0xffd166, barH: 3.2 }
+    elite: { hp: 300, spd: 1.75, reach: 2.7, windup: 0.72, dmg: 24, r: 1.15, size: 1.55, brk: 170, color: 0x7a4a8f, eye: 0xffd166, barH: 3.2 },
+    boss: { hp: 900, spd: 1.35, reach: 3.2, windup: 0.82, dmg: 26, r: 1.6, size: 2.25, brk: 320, color: 0x9b1f2e, eye: 0xffe066, barH: 4.4 }
   };
 
   const enemies = [];
@@ -1230,9 +1321,9 @@
     const g = new THREE.Group();
     const bodyMat = new THREE.MeshLambertMaterial({ color: B.color, emissive: 0x000000 });
     const size = B.size;
-    const body = new THREE.Mesh(new THREE.BoxGeometry(size, size * (type === 'stone' || type === 'elite' ? 1.5 : 0.85), size), bodyMat);
+    const body = new THREE.Mesh(new THREE.BoxGeometry(size, size * (type === 'stone' || type === 'elite' || type === 'boss' ? 1.5 : 0.85), size), bodyMat);
     body.castShadow = true; body.receiveShadow = true;
-    body.position.y = (type === 'stone' || type === 'elite') ? size * 0.75 : size * 0.42;
+    body.position.y = (type === 'stone' || type === 'elite' || type === 'boss') ? size * 0.75 : size * 0.42;
     g.add(body);
 
     // 眼睛
@@ -1242,19 +1333,27 @@
       eye.position.set((i ? 1 : -1) * size * 0.18, body.position.y + size * 0.08, size * 0.5);
       g.add(eye);
     }
-    if (type === 'stone' || type === 'elite') {
+    if (type === 'stone' || type === 'elite' || type === 'boss') {
       const sh = new THREE.Mesh(new THREE.BoxGeometry(size * 1.25, 0.22, size * 1.25), bodyMat);
       sh.position.y = size * 1.55;
       sh.castShadow = true;
       g.add(sh);
     }
-    if (type === 'elite') {
-      // 双角：一眼认出这是统领
+    if (type === 'elite' || type === 'boss') {
+      // 双角：一眼认出这是统领 / 魔将
+      const hk = type === 'boss' ? 1.7 : 1;
       for (let i = 0; i < 2; i++) {
-        const horn = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.5, 0.16), bodyMat);
-        horn.position.set((i ? 1 : -1) * size * 0.3, size * 1.62, 0);
+        const horn = new THREE.Mesh(new THREE.BoxGeometry(0.16 * hk, 0.5 * hk, 0.16 * hk), bodyMat);
+        horn.position.set((i ? 1 : -1) * size * 0.3 * hk, size * 1.62, 0);
         horn.rotation.z = (i ? 1 : -1) * 0.35;
         g.add(horn);
+      }
+      if (type === 'boss') {
+        // 魔将王冠：顶部横脊，强化压迫感
+        const cr = new THREE.Mesh(new THREE.BoxGeometry(size * 1.5, 0.18, size * 0.3),
+          new THREE.MeshLambertMaterial({ color: 0xffe066, emissive: 0x332200 }));
+        cr.position.set(0, size * 2.0, 0);
+        g.add(cr);
       }
     }
     if (type === 'archer') {
@@ -1272,12 +1371,12 @@
       hp: Math.round(B.hp * cfg.hpMul), maxHp: Math.round(B.hp * cfg.hpMul),
       breakv: 0, maxBreak: B.brk,
       state: 'idle', stateT: 0, hitFlash: 0, dead: false,
-      speed: B.spd * cfg.spdMul, aggro: type === 'archer' ? 13 : 7.5 + (type === 'elite' ? 2 : 0),
+      speed: B.spd * cfg.spdMul,       aggro: type === 'archer' ? 13 : 7.5 + ((type === 'elite' || type === 'boss') ? 2 : 0),
       reach: B.reach, windup: B.windup,
       dmg: Math.round(B.dmg * cfg.dmgMul), radius: B.r, bob: Math.random() * 6.28,
       knock: new THREE.Vector3(),
       circleDir: Math.random() < 0.5 ? 1 : -1, strafeT: 1 + Math.random(),
-      summonT: type === 'elite' ? 6 : 0, shootCd: 1.5, dashedId: -1
+      summonT: (type === 'elite' || type === 'boss') ? 6 : 0, shootCd: 1.5, dashedId: -1
     };
 
     // 头顶血条（独立于已旋转的模型，避免被父级旋转带歪）
@@ -1304,6 +1403,7 @@
       stone: lv >= 2 ? Math.min(4, Math.floor((lv + 1) / 2)) : 0,
       archer: lv >= 3 ? Math.min(5, lv - 2) : 0,
       elite: lv >= 4 && lv % 2 === 0 ? 1 + Math.floor((lv - 4) / 6) : 0,
+      boss: lv % 5 === 0 ? 1 : 0,
       hpMul: 1 + (lv - 1) * 0.20,
       dmgMul: 1 + (lv - 1) * 0.10,
       spdMul: Math.min(1.5, 1 + (lv - 1) * 0.045)
@@ -1346,6 +1446,7 @@
     put('stone', cfg.stone);
     put('archer', cfg.archer);
     put('elite', cfg.elite);
+    if (cfg.boss) put('boss', cfg.boss);
     waveTotal = enemies.length;
     attackTokens = 1 + Math.min(3, Math.floor(level / 2));
   }
@@ -1355,7 +1456,9 @@
   /* ------------------------- 音效 ------------------------- */
   let actx = null;
   function initAudio() {
-    try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { actx = null; }
+    if (!actx) {
+      try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { actx = null; }
+    }
     // iOS：AudioContext 需在用户手势中创建并显式恢复
     if (actx && actx.state === 'suspended' && actx.resume) actx.resume();
   }
@@ -1379,6 +1482,179 @@
     g.gain.setValueAtTime(vol, t);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.start(t); o.stop(t + dur + 0.02);
+  }
+
+  /* ===================== 背景音乐 + 语音呼喊 ===================== */
+  // 程序化生成（Web Audio），无外部音频文件，可离线运行。
+  // 两套主题：adventure（史诗冒险·中速） / boss（激昂紧凑·快节奏）。
+  // 主循环每帧调用 Music.update(dt) 推进 sequencer；boss 存活时自动切到 boss 主题。
+  const Music = (function () {
+    let bus = null, playing = false, muted = false, mode = 'adventure';
+    let nextTime = 0, step16 = 0, barCount = 0, scheduled = 0;
+
+    // A 小调和弦进行（4 小节循环）：Am - F - C - G
+    const ROOT = [110.00, 87.31, 130.81, 98.00];            // A2 F2 C3 G2
+    const TRIAD = [[0, 3, 7], [0, 4, 7], [0, 4, 7], [0, 4, 7]]; // 小三 / 大三
+    const semi = function (r, n) { return r * Math.pow(2, n / 12); };
+
+    function kick(t, v) {
+      if (!actx) return;
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(150, t);
+      o.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+      g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+      o.connect(g); g.connect(bus); o.start(t); o.stop(t + 0.2);
+    }
+    function noise(t, dur, v, hp, type) {
+      if (!actx) return;
+      const n = Math.max(1, Math.floor(actx.sampleRate * dur));
+      const buf = actx.createBuffer(1, n, actx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+      const src = actx.createBufferSource(); src.buffer = buf;
+      const f = actx.createBiquadFilter(); f.type = type || 'highpass'; f.frequency.value = hp || 6000;
+      const g = actx.createGain(); g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      src.connect(f); f.connect(g); g.connect(bus); src.start(t); src.stop(t + dur + 0.02);
+    }
+    function tone(t, freq, dur, v, type, lp) {
+      if (!actx) return;
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = type || 'sawtooth'; o.frequency.setValueAtTime(freq, t);
+      const f = actx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = lp || 2200;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      o.connect(f); f.connect(g); g.connect(bus); o.start(t); o.stop(t + dur + 0.02);
+    }
+    function tempo() { return mode === 'boss' ? 152 : 108; }
+
+    function scheduleStep(s, t) {
+      scheduled++;
+      const bar = barCount % 4, root = ROOT[bar], tri = TRIAD[bar];
+      if (mode === 'adventure') {
+        if (s === 0 || s === 8) kick(t, 0.5);
+        if (s === 4 || s === 12) noise(t, 0.18, 0.22, 1800, 'bandpass');
+        if (s % 2 === 0) noise(t, 0.04, 0.05, 7000, 'highpass');
+        if (s === 0) tone(t, root, 0.9, 0.16, 'triangle', 600);
+        if (s === 8) tone(t, root * 1.5, 0.4, 0.12, 'triangle', 600);
+        if (s % 2 === 0) tone(t, semi(root * 2, tri[(s / 2) % 3]), 0.22, 0.07, 'square', 1800);
+        if (s === 0) tri.forEach(function (o) { tone(t, semi(root * 2, o), 1.6, 0.035, 'sawtooth', 1400); });
+      } else { // boss：更快更密、压迫感
+        if (s === 0 || s === 4 || s === 8 || s === 12) kick(t, 0.55);
+        if (s === 4 || s === 12) noise(t, 0.18, 0.26, 1800, 'bandpass');
+        noise(t, 0.04, 0.06, 7000, 'highpass');
+        if (s % 2 === 0) tone(t, root, 0.18, 0.17, 'sawtooth', 700);
+        else tone(t, root * 1.5, 0.1, 0.10, 'square', 900);
+        tone(t, semi(root * 2, tri[s % 3]), 0.12, 0.06, 'square', 2200);
+        if (s === 0) tri.forEach(function (o) { tone(t, semi(root * 2, o), 1.2, 0.045, 'sawtooth', 1600); });
+      }
+    }
+
+    function update(dt) {
+      if (!playing || !actx || muted) return;
+      const s16 = (60 / tempo()) / 4;
+      if (nextTime < actx.currentTime) nextTime = actx.currentTime + 0.05;
+      let guard = 0;
+      while (nextTime < actx.currentTime + 0.12 && guard++ < 64) {
+        scheduleStep(step16, nextTime);
+        nextTime += s16;
+        step16++; if (step16 >= 16) { step16 = 0; barCount++; }
+      }
+    }
+    function start(m) {
+      if (!actx) return;
+      if (!bus) { bus = actx.createGain(); bus.gain.value = 0.0001; bus.connect(actx.destination); }
+      mode = m || 'adventure'; playing = true; step16 = 0; barCount = 0;
+      nextTime = actx.currentTime + 0.06;
+      bus.gain.cancelScheduledValues(actx.currentTime);
+      bus.gain.setValueAtTime(bus.gain.value, actx.currentTime);
+      bus.gain.linearRampToValueAtTime(0.42, actx.currentTime + 0.6);
+    }
+    function setMode(m) {
+      if (mode === m) return;
+      mode = m;
+      if (bus && actx) {
+        bus.gain.cancelScheduledValues(actx.currentTime);
+        bus.gain.setValueAtTime(bus.gain.value, actx.currentTime);
+        bus.gain.linearRampToValueAtTime(m === 'boss' ? 0.52 : 0.42, actx.currentTime + 0.3);
+      }
+      if (m === 'boss' && actx) { // 入场上扫 stinger
+        const t = actx.currentTime + 0.02;
+        const o = actx.createOscillator(), g = actx.createGain();
+        o.type = 'sawtooth'; o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(880, t + 0.5);
+        const f = actx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 2500;
+        g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.18, t + 0.1);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+        o.connect(f); f.connect(g); g.connect(bus || actx.destination); o.start(t); o.stop(t + 0.65);
+      }
+    }
+    function setMuted(v) {
+      muted = v;
+      if (bus && actx) {
+        bus.gain.cancelScheduledValues(actx.currentTime);
+        bus.gain.setValueAtTime(bus.gain.value, actx.currentTime);
+        bus.gain.linearRampToValueAtTime(muted ? 0.0001 : 0.42, actx.currentTime + 0.15);
+      }
+    }
+    return {
+      update: update, start: start, setMode: setMode, setMuted: setMuted,
+      toggle: function () { setMuted(!muted); return muted; },
+      isMuted: function () { return muted; },
+      getMode: function () { return mode; },
+      isPlaying: function () { return playing; },
+      scheduled: function () { return scheduled; }
+    };
+  })();
+
+  // 语音呼喊：技能释放时的"嘿/哈"战吼 +（可选）技能名呼喊
+  let shoutCount = 0, voxFired = 0;
+  function shout(kind) {
+    shoutCount++;
+    if (!actx) return;
+    const t = actx.currentTime;
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = 'sawtooth';
+    const f0 = kind === 'ha' ? 220 : 260, f1 = kind === 'ha' ? 130 : 200;
+    o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + 0.16);
+    const bp1 = actx.createBiquadFilter(); bp1.type = 'bandpass'; bp1.frequency.value = kind === 'ha' ? 800 : 700; bp1.Q.value = 6;
+    const bp2 = actx.createBiquadFilter(); bp2.type = 'bandpass'; bp2.frequency.value = kind === 'ha' ? 1200 : 1100; bp2.Q.value = 4;
+    const ng = actx.createGain(); ng.gain.setValueAtTime(0.06, t); ng.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+    const nb = actx.createBuffer(1, Math.floor(actx.sampleRate * 0.2), actx.sampleRate);
+    const nd = nb.getChannelData(0);
+    for (let i = 0; i < nd.length; i++) nd[i] = (Math.random() * 2 - 1) * (1 - i / nd.length);
+    const ns = actx.createBufferSource(); ns.buffer = nb;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.16, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+    o.connect(bp1); o.connect(bp2); bp1.connect(g); bp2.connect(g);
+    ns.connect(ng); ng.connect(g); g.connect(actx.destination);
+    o.start(t); o.stop(t + 0.24); ns.start(t); ns.stop(t + 0.2);
+  }
+  function vox(text) {
+    if (!actx || !('speechSynthesis' in window) || !text) return;
+    try {
+      voxFired++;
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'zh-CN'; u.rate = 1.25; u.pitch = 1.1; u.volume = 0.9;
+      window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
+    } catch (e) { /* 语音不可用时静默忽略 */ }
+  }
+
+  // boss 存活检测 → 自动切换激昂主题
+  let bossNotified = false;
+  function anyBossAlive() {
+    for (let i = 0; i < enemies.length; i++) if (enemies[i].type === 'boss' && !enemies[i].dead) return true;
+    return false;
+  }
+  function recomputeMusic() {
+    if (!Music.isPlaying()) return;
+    const want = anyBossAlive() ? 'boss' : 'adventure';
+    if (Music.getMode() === want) return;
+    Music.setMode(want);
+    if (ui.musicModeEl) {
+      ui.musicModeEl.textContent = want === 'boss' ? 'BOSS 战' : '冒险';
+      ui.musicModeEl.classList.toggle('boss', want === 'boss');
+    }
+    if (want === 'boss' && !bossNotified) { bossNotified = true; toast('⚠ BOSS 降临', 2.2); }
+    if (want === 'adventure') bossNotified = false;
   }
 
   /* ------------------------- HUD ------------------------- */
@@ -1407,10 +1683,21 @@
     toast: document.getElementById('toast'),
     startScreen: document.getElementById('startScreen'),
     winScreen: document.getElementById('winScreen'),
-    winText: document.getElementById('winText')
+    winText: document.getElementById('winText'),
+    musicBtn: document.getElementById('musicBtn'),
+    musicModeEl: document.getElementById('musicMode')
   };
   ui.killCount.textContent = enemiesLeft();
   ui.scoreNum.textContent = '0';
+
+  // 音乐开关：点击静音/恢复，并切换按钮与主题标签
+  if (ui.musicBtn) {
+    ui.musicBtn.addEventListener('click', function () {
+      const m = Music.toggle();
+      ui.musicBtn.classList.toggle('off', m);
+      ui.musicBtn.textContent = m ? '♪ 音乐 关' : '♪ 音乐 开';
+    });
+  }
 
   let toastTimer = 0;
   function toast(msg, dur) {
@@ -1770,6 +2057,9 @@
     shake = sk.ult ? 0.5 : 0.2;
     toast('「' + sk.name + '」', 1.5);
     sfx(sk.ult ? 'ult' : 'skill');
+    // 释放瞬间的战吼："嘿/哈"，终极技喊"哈"并呼喊技能名
+    shout(sk.ult ? 'ha' : (Math.random() < 0.5 ? 'hei' : 'ha'));
+    if (sk.name) vox(sk.name);
     const col = SKILL_COLOR[hero.weapon];
     spawnParticles(new THREE.Vector3(hero.pos.x, hero.pos.y + 0.9, hero.pos.z), sk.ult ? 22 : 12, col, sk.ult ? 4.5 : 3, 0.16);
     if (sk.ult) { slowT = 0.22; timeScale = 0.35; }
@@ -2555,8 +2845,8 @@
 
   /* ------------------------- 小地图 ------------------------- */
   // 世界坐标 → 小地图像素（全图映射：SIZE×SIZE 场地 → 方形画布，圆形裁剪）
-  const MAP_COLOR = { slime: '#ff6b6b', stone: '#ff9f43', archer: '#ffd166', elite: '#c084fc' };
-  const MAP_DOT = { slime: 3, stone: 4, archer: 3, elite: 5 };
+  const MAP_COLOR = { slime: '#ff6b6b', stone: '#ff9f43', archer: '#ffd166', elite: '#c084fc', boss: '#ff3b3b' };
+  const MAP_DOT = { slime: 3, stone: 4, archer: 3, elite: 5, boss: 8 };
   function mmSize() {
     const cv = ui.minimap;
     if (!cv) return 0;
@@ -2583,6 +2873,7 @@
     if (!cv) return;
     const s = mmSize();
     const ctx = cv.getContext('2d');
+    const k = s / 132;   // 元素尺寸随画布缩放（桌面 132 / 手机 104）
     ctx.clearRect(0, 0, s, s);
 
     // 圆形裁剪
@@ -2600,7 +2891,7 @@
 
     // 中心十字：方位参照
     ctx.strokeStyle = 'rgba(120,160,220,0.16)';
-    ctx.lineWidth = 1;
+    ctx.lineWidth = Math.max(1, k);
     ctx.beginPath();
     ctx.moveTo(s / 2, 0); ctx.lineTo(s / 2, s);
     ctx.moveTo(0, s / 2); ctx.lineTo(s, s / 2);
@@ -2608,8 +2899,9 @@
 
     // 锚点（治疗点）：青色小点
     for (let i = 0; i < shrines.length; i++) {
+      const sx = mmW2P(shrines[i].x, s), sz = mmW2P(shrines[i].z, s);
       ctx.fillStyle = 'rgba(111,216,255,0.85)';
-      ctx.fillRect(mmW2P(shrines[i].x, s) - 1.5, mmW2P(shrines[i].z, s) - 1.5, 3, 3);
+      ctx.fillRect(sx - 1.5 * k, sz - 1.5 * k, 3 * k, 3 * k);
     }
 
     // 怪物彩点：按类型分色，一眼分辨威胁构成；当前目标加脉冲光环
@@ -2620,17 +2912,17 @@
       if (e.dead) continue;
       const px = mmW2P(e.pos.x, s), pz = mmW2P(e.pos.z, s);
       const col = MAP_COLOR[e.type] || '#ff6b6b';
-      const r = MAP_DOT[e.type] || 3;
+      const r = (MAP_DOT[e.type] || 3) * k;
       if (e === tgt) {
         ctx.strokeStyle = 'rgba(255,216,138,0.9)';
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 1.5 * k;
         ctx.beginPath();
-        ctx.arc(px, pz, r + 3 + Math.sin(now * 6) * 1.2, 0, Math.PI * 2);
+        ctx.arc(px, pz, r + 3 * k + Math.sin(now * 6) * 1.2 * k, 0, Math.PI * 2);
         ctx.stroke();
       }
       ctx.fillStyle = col;
       ctx.shadowColor = col;
-      ctx.shadowBlur = 4;
+      ctx.shadowBlur = 4 * k;
       ctx.beginPath();
       ctx.arc(px, pz, r, 0, Math.PI * 2);
       ctx.fill();
@@ -2643,9 +2935,9 @@
     ctx.rotate(Math.PI / 2 - hero.facing);
     ctx.fillStyle = '#ffd88a';
     ctx.strokeStyle = 'rgba(20,16,8,0.9)';
-    ctx.lineWidth = 1;
+    ctx.lineWidth = Math.max(1, k);
     ctx.beginPath();
-    ctx.moveTo(5.5, 0); ctx.lineTo(-3.5, 3.4); ctx.lineTo(-3.5, -3.4);
+    ctx.moveTo(5.5 * k, 0); ctx.lineTo(-3.5 * k, 3.4 * k); ctx.lineTo(-3.5 * k, -3.4 * k);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
@@ -2655,9 +2947,9 @@
 
     // 外圈边框
     ctx.strokeStyle = 'rgba(140,170,220,0.5)';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2 * k;
     ctx.beginPath();
-    ctx.arc(s / 2, s / 2, s / 2 - 1, 0, Math.PI * 2);
+    ctx.arc(s / 2, s / 2, s / 2 - k, 0, Math.PI * 2);
     ctx.stroke();
   }
 
@@ -2735,6 +3027,7 @@
     let dt = Math.min(0.05, clock.getDelta());
 
     if (!running) {
+      Music.update(dt || 0.016);
       updateCamera(dt || 0.016);
       renderer.render(scene, camera);
       return;
@@ -2751,6 +3044,8 @@
 
     updateHero(sdt);
     updateEnemies(sdt);
+    recomputeMusic();
+    Music.update(dt);
     updateParticles(sdt);
     updateRings(sdt);
     updateBlades(sdt);
@@ -2814,6 +3109,7 @@
     ui.startScreen.classList.add('hide');
     ui.winScreen.classList.add('hide');
     initAudio();
+    Music.start('adventure');
     if (!started) {
       started = true;
       hero.pos.set(0, groundH(0, 2), 2);
@@ -2918,6 +3214,19 @@
       return shrines.map(function (r) { return { x: +r.x.toFixed(2), z: +r.z.toFixed(2) }; });
     },
     skills: function () { return SKILLS[hero.weapon].map(function (s) { return s.name; }); },
+    // 音频联调钩子
+    audioOn: function () { initAudio(); if (actx) Music.start('adventure'); return !!actx; },
+    musicMode: function () { return Music.getMode(); },
+    musicPlaying: function () { return Music.isPlaying(); },
+    musicScheduled: function () { return Music.scheduled(); },
+    musicMuted: function () { return Music.isMuted(); },
+    setMusicMode: function (m) { Music.setMode(m); },
+    musicTick: function (dt) { Music.update(dt || 1 / 60); },
+    toggleMusic: function () { return Music.toggle(); },
+    shoutCount: function () { return shoutCount; },
+    voxFired: function () { return voxFired; },
+    bossActive: function () { return anyBossAlive(); },
+    recomputeMusic: recomputeMusic,
     attack: tryAttack, dodge: doDodge, hud: updateHUD,
     // 触屏联调：合成触点驱动摇杆 / 动作键（与真实手指同链路）
     // dpadDown/dpadUp/dpad 保留旧语义：合成一次"拨向某象限 → 回中/松开"
@@ -2981,6 +3290,7 @@
     step: function (dt) {
       updateHero(dt);
       updateEnemies(dt);
+      recomputeMusic();
       updateParticles(dt);
       updateRings(dt);
       updateBlades(dt);

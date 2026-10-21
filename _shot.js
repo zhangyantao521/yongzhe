@@ -163,6 +163,57 @@
       castTo('kdd', 'heavy', 1.05);
       L('spear ULT dmg=' + (e17.maxHp - e17.hp).toFixed(1) + ' (cfg 28x5=140)');
 
+      /* —— v1.6 左右横断系：→← / ←→ / ←← —— */
+      // R1. 剑：十字燕返 →←轻（交叉横斩两段）
+      clear(); var r1 = dummy('slime', 2.0); S.equip(0);
+      var s1 = castTo('lr', 'light', 1.05);
+      L('sword lr-light name=' + (s1 ? s1.name : '-') + ' dmg=' + (r1.maxHp - r1.hp).toFixed(1) + ' (期望 十字燕返 / 13+17=30)');
+
+      // R2. 剑：回风斩 ←→轻（后撤反手横割）
+      clear(); var r2 = dummy('slime', 1.6);
+      var s2 = castTo('rl', 'light', 1.05);
+      L('sword rl-light name=' + (s2 ? s2.name : '-') + ' dmg=' + (r2.maxHp - r2.hp).toFixed(1) + ' (期望 回风斩 / 20)');
+
+      // R3. 剑：断流横断 ←←重（大横断两击）
+      clear(); var r3 = dummy('slime', 1.8);
+      var s3 = castTo('ll', 'heavy', 1.05);
+      L('sword ll-heavy name=' + (s3 ? s3.name : '-') + ' dmg=' + (r3.maxHp - r3.hp).toFixed(1) + ' (期望 断流横断 / 22+22=44)');
+
+      // R4. 斧：横断双挥 →←轻
+      clear(); var r4 = dummy('slime', 1.6); S.equip(1);
+      var s4 = castTo('lr', 'light', 1.05);
+      L('axe lr-light name=' + (s4 ? s4.name : '-') + ' dmg=' + (r4.maxHp - r4.hp).toFixed(1) + ' (期望 横断双挥 / 17+23=40)');
+
+      // R5. 斧：拖斧反斩 ←→轻
+      clear(); var r5 = dummy('slime', 1.6);
+      var s5 = castTo('rl', 'light', 1.05);
+      L('axe rl-light name=' + (s5 ? s5.name : '-') + ' dmg=' + (r5.maxHp - r5.hp).toFixed(1) + ' (期望 拖斧反斩 / 26)');
+
+      // R6. 斧：横断山岳 ←←重
+      clear(); var r6 = dummy('slime', 1.8);
+      var s6 = castTo('ll', 'heavy', 1.05);
+      L('axe ll-heavy name=' + (s6 ? s6.name : '-') + ' dmg=' + (r6.maxHp - r6.hp).toFixed(1) + ' (期望 横断山岳 / 23+23=46)');
+
+      // R7. 枪：双横抹月 →←轻
+      clear(); var r7 = dummy('slime', 2.0); S.equip(2);
+      var s7 = castTo('lr', 'light', 1.05);
+      L('spear lr-light name=' + (s7 ? s7.name : '-') + ' dmg=' + (r7.maxHp - r7.hp).toFixed(1) + ' (期望 双横抹月 / 11+15=26)');
+
+      // R8. 枪：侧返枪 ←→轻
+      clear(); var r8 = dummy('slime', 1.6);
+      var s8 = castTo('rl', 'light', 1.05);
+      L('spear rl-light name=' + (s8 ? s8.name : '-') + ' dmg=' + (r8.maxHp - r8.hp).toFixed(1) + ' (期望 侧返枪 / 22)');
+
+      // R9. 枪：横断江 ←←重
+      clear(); var r9 = dummy('slime', 2.0);
+      var s9 = castTo('ll', 'heavy', 1.05);
+      L('spear ll-heavy name=' + (s9 ? s9.name : '-') + ' dmg=' + (r9.maxHp - r9.hp).toFixed(1) + ' (期望 横断江 / 22+22=44)');
+
+      // R10. 左右指令不串扰上下系：↑↓轻仍为回燕斩，←→轻不误触
+      clear(); var r10 = dummy('slime', 1.8); S.equip(0);
+      var s10 = castTo('ud', 'light', 1.05);
+      L('cross-check ud-light name=' + (s10 ? s10.name : '-') + ' (期望 回燕斩)');
+
       // 18. 技能被普通攻击区隔：不匹配指令时仍是 light
       clear(); dummy('slime', 5.0); S.equip(0);
       S.attack('light');
@@ -276,6 +327,14 @@
       step(70);
       L('lock touch-chain awayFacing=' + away.toFixed(2) + ' lockFacing=' + f7.toFixed(2) +
         ' (期望≈0) dmg=' + (k7.maxHp - k7.hp).toFixed(1) + ' (期望 40)');
+
+      // 8. 左右系指令同样自动锁怪：背对怪物搓 →←轻（十字燕返）应转向命中
+      clear(); var k8 = at('slime', 0, -2.0); S.equip(0);
+      S.hero.facing = 0;   // 朝 +Z，敌人在正背后
+      S.cast('lr', 'light');
+      var f8 = S.hero.facing;
+      step(70);
+      L('lock lr-cmd facing=' + f8.toFixed(2) + ' (期望≈3.14) dmg=' + (k8.maxHp - k8.hp).toFixed(1) + ' (期望 30)');
     }
 
     if (mode === 'map') {
@@ -642,6 +701,61 @@
         if (!e3.dead) st[e3.state] = (st[e3.state] || 0) + 1;
       }
       L('ai: states=' + JSON.stringify(st) + ' hpMin=' + Math.round(hpMin));
+    }
+
+    if (mode === 'audio') {
+      /* ============ 背景音乐 + 语音自检 ============ */
+      L('--- audio / music / voice self-check ---');
+      var aok = S.audioOn();
+      L('audioOn=' + aok + ' playing=' + S.musicPlaying() + ' mode=' + S.musicMode());
+      for (var mi = 0; mi < 8; mi++) S.musicTick(1 / 60);
+      L('scheduled=' + S.musicScheduled() + ' (>=1)');
+      L('mode=' + S.musicMode() + ' (expect adventure)');
+      L('muted=' + S.musicMuted() + ' (expect false)');
+
+      // 接口切换 boss 主题
+      S.setMusicMode('boss');
+      L('setMusicMode(boss) -> mode=' + S.musicMode() + ' (expect boss)');
+      S.setMusicMode('adventure');
+
+      // 关卡配置：第 5 裂片出 boss、第 4 不出
+      L('levelCfg(5).boss=' + S.levelCfg(5).boss + ' (expect 1)');
+      L('levelCfg(4).boss=' + S.levelCfg(4).boss + ' (expect 0)');
+
+      // 生成 boss -> 自动切激昂
+      var b = S.spawn('boss', 0, 8);
+      L('boss type=' + b.type + ' alive=' + (!b.dead));
+      S.stepN(2, 1 / 60);
+      L('bossActive=' + S.bossActive() + ' mode=' + S.musicMode() + ' (expect true/boss)');
+
+      // boss 倒下 -> 切回冒险
+      b.dead = true;
+      S.stepN(2, 1 / 60);
+      L('after boss dead mode=' + S.musicMode() + ' (expect adventure)');
+
+      // 释放技能 -> 战吼计数 + 语音呼喊
+      var sc0 = S.shoutCount(), vf0 = S.voxFired();
+      S.cast('kdd', 'heavy');   // 万剑归宗（终极）
+      S.stepN(3, 1 / 60);
+      L('shoutCount=' + S.shoutCount() + ' (>' + sc0 + ')');
+      L('voxFired=' + S.voxFired() + ' (>' + vf0 + ')');
+
+      // 静音切换
+      var mm = S.toggleMusic();
+      L('toggleMusic -> muted=' + mm);
+      S.setMusicMode('adventure');
+      L('AUDIO-OK');
+    }
+
+    if (mode === 'boss') {
+      /* ============ boss 外观截图 ============ */
+      S.clearField();
+      S.hero.pos.set(0, 0, 0); S.hero.facing = 0; S.hero.hp = 100;
+      var bz = S.spawn('boss', 0, 7);
+      bz.speed = 0; bz.aggro = 0; bz.state = 'idle'; bz.stateT = 0; bz.pos.set(0, 0, 7);
+      S.cam(2.0, -6.5);
+      for (var bi = 0; bi < 5; bi++) S.step(1 / 60);
+      L('boss rendered type=' + bz.type + ' alive=' + (!bz.dead) + ' hp=' + bz.hp);
     }
   } catch (err) {
     lines.push('EXCEPTION ' + err.message);

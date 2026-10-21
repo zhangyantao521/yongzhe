@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>碎境勇者 · 游戏设计文档 v1.4</title>
+<title>碎境勇者 · 游戏设计文档 v1.7</title>
 <style>
   :root {
     --paper: #faf8f2;
@@ -99,7 +99,7 @@
 <div class="wrap">
 
 <header class="cover">
-  <div class="kicker">GAME DESIGN DOCUMENT · v1.4</div>
+  <div class="kicker">GAME DESIGN DOCUMENT · v1.7</div>
   <h1>碎境勇者</h1>
   <p class="sub">Shattered Realm — 三维像素 / 动作冒险 / 大陆探索</p>
   <div class="meta">
@@ -171,7 +171,7 @@
     <tbody>
       <tr><td>轻击连段</td><td>三段，第三段提高伤害与破防倍率（×1.6）。<strong>具体动作由武器决定</strong>，见下表</td><td>命中停顿 45ms，震动 0.22</td></tr>
       <tr><td>重击</td><td>长蓄力后带前冲的终结一击，破防效率最高，可打断敌人轻攻击</td><td>前摇 46–54% 时长，停顿 75ms</td></tr>
-      <tr><td>指令技</td><td>方向序列 + 攻击键释放，每把武器 7 式（见专表）</td><td>顿帧 50–100ms，终极技慢放 0.35 倍</td></tr>
+      <tr><td>指令技</td><td>方向序列 + 攻击键释放，每把武器 10 式（含 3 式左右横断系，见专表）</td><td>顿帧 50–100ms，终极技慢放 0.35 倍</td></tr>
       <tr><td>闪避翻滚</td><td>16 体力。<strong>有方向输入</strong>：朝输入方向前滚翻，位移约 4 米；<strong>无输入</strong>：后撤步，位移约 2.7 米</td><td>无敌帧 0.34 / 0.24 秒</td></tr>
       <tr><td>格挡</td><td>减伤 86%，持续扣体力；体力归零则被击溃硬直 1.1 秒</td><td>—</td></tr>
       <tr><td>完美弹反</td><td>按下格挡后 <strong>0.22 秒内</strong>被命中：不受伤害，周围 4.2 米敌人破防条直接拉满</td><td>触发 0.28 倍慢放 0.45 秒</td></tr>
@@ -202,7 +202,7 @@
   <p>动作系统用<strong>关节关键帧</strong>驱动：每个动作是一串 <code>{进度, 关节角度}</code>，字段覆盖右臂三轴、左臂、上身俯仰/扭腰、整体前倾、手臂前后位移、武器前后位移、离地高度。命中判定与关键帧对齐（<code>hitAt</code>），所以"看到打到"就是"真的打到"。挥击窗口会沿武器方向生成短命高光，连成<strong>挥砍拖影</strong>——在 384×216 的渲染分辨率下，这是让人看清高速动作的关键。</p>
 
   <h3>指令技系统</h3>
-  <p>每把武器有 <strong>7 式指令技</strong>，用方向序列 + 攻击键释放：窗口 <strong>0.8 秒</strong>内依次输入方向（WASD 或方向键），再点左键（轻）或右键（重）。输入序列实时显示在左上角 HUD，命中时高亮技能名——玩家不需要背表， UI 就是表。</p>
+  <p>每把武器有 <strong>10 式指令技</strong>，用方向序列 + 攻击键释放：窗口 <strong>0.8 秒</strong>内依次输入方向（WASD 或方向键），再点左键（轻）或右键（重）。输入序列实时显示在左上角 HUD，命中时高亮技能名——玩家不需要背表， UI 就是表。</p>
   <table>
     <thead><tr><th style="width:90px">指令</th><th>裂空剑</th><th>碎岩斧</th><th>逐风枪</th></tr></thead>
     <tbody>
@@ -212,6 +212,9 @@
       <tr><td><strong>↑↑ + 重</strong></td><td>惊雷刺 · 5.4 米突进贯穿</td><td>崩山冲锋 · 6.4 米冲锋双劈</td><td>惊雷贯穿 · 8 米超距贯穿刺</td></tr>
       <tr><td><strong>↓↓ + 重</strong></td><td>劈山剑 · 跳劈 + 地裂冲击</td><td>天崩地裂 · 高跳砸 + 双冲击环</td><td>破军扫 · 满月横扫两段</td></tr>
       <tr><td><strong>空格↑ + 轻</strong></td><td>瞬影斩 · 闪避瞬身斩</td><td>瞬影砸 · 闪避接跳砸</td><td>瞬影刺 · 闪避突刺</td></tr>
+      <tr><td><strong>→← + 轻</strong></td><td>十字燕返 · 前冲交叉横斩两段</td><td>横断双挥 · 横扫两段过顶开合</td><td>双横抹月 · 枪身水平双抹</td></tr>
+      <tr><td><strong>←→ + 轻</strong></td><td>回风斩 · 后撤反手横割</td><td>拖斧反斩 · 拖步反手撩斩</td><td>侧返枪 · 侧撤反手横扫</td></tr>
+      <tr><td><strong>←← + 重</strong></td><td>断流横断 · 大横断两击</td><td>横断山岳 · 半周横断重击</td><td>横断江 · 宽幅横扫两段</td></tr>
       <tr><td><strong>空格↓↓ + 重</strong></td><td><strong>万剑归宗</strong> ★终极</td><td><strong>陨石天降</strong> ★终极</td><td><strong>横扫千军</strong> ★终极</td></tr>
     </tbody>
   </table>
@@ -225,6 +228,7 @@
   </table>
   <p>三条设计原则：<strong>① 武器性格决定动作语法</strong>——剑多段轻盈、斧只有两段但每段沉重、枪全是单点穿透加超长位移，所以同一套指令在三把武器上打出完全不同的节奏。<strong>② 突进技走胶囊判定</strong>——前冲类技能记录"起点→当前位置"线段做命中检测，冲过敌人不会 miss，一路上全都扫到。<strong>③ 终极技是指令的终点而非资源的起点</strong>——不需要攒任何条，任何玩家在任何一个安静瞬间都能放出来，但放之前依然要读场上局势。</p>
   <p><strong>④ 释放瞬间自动锁怪</strong>——搓招的方向键会带动角色转身，玩家经常在"输入方向"和"敌人方向"之间被撕开，技能放空。释放指令技的瞬间，角色强制转向 <strong>15 米内最近的存活敌人</strong>（多目标取最近，无目标则保持当前朝向），并在目标脚下亮起一个金环作为锁定反馈。普通攻击不受影响，保持原有的转向手感。</p>
+  <p><strong>⑤ 左右横断系补齐方向库</strong>——v1.6 起每把武器新增 3 式左右连招：<strong>→←轻</strong>（交叉横斩两段，前冲贴脸）、<strong>←→轻</strong>（后撤拉开距离再反手横割，攻防一体）、<strong>←←重</strong>（大范围横断两击，扇形 260°–310° 扫侧翼）。上下系负责"纵深"（前冲突进 / 跳砸地裂），左右系负责"宽度"（横扫侧翼的包围圈）——配合自动锁怪，搓招本身就是一次转向与走位决策。</p>
 
   <h3>闪避的战术价值</h3>
   <p>闪避不是"躲完继续打"，它本身就是进攻选择。两条独立机制：</p>
@@ -330,6 +334,31 @@
     <div class="k">适配细节</div><div>viewport-fit=cover + env(safe-area-inset) 避让刘海/小黑条；窄屏 HUD 与摇杆缩放；全屏按钮；iOS AudioContext 手势内创建并 resume；失焦自动松开摇杆</div>
     <div class="k">性能</div><div>384×216 渲染缓冲 + 像素比 1，触屏 GPU 负载与桌面一致；逻辑帧与渲染帧解耦（dt 截断 0.05s）</div>
   </div>
+
+  <h3>小地图：透明全图雷达</h3>
+  <p>被包围或敌人被地形/树木挡住时，玩家第一诉求是"敌人在哪"。右上角一块<strong>圆形透明小地图</strong>解决追踪问题：整张 46×46 场地一次映射，所有存活怪物实时标点，不用切视角、不用记路。设计上刻意做"淡"——半透明底盘 + 细描边，不抢主画面注意力。</p>
+  <div class="kv">
+    <div class="k">映射</div><div>世界坐标线性映射到画布（-23~23 → 0~132px），圆形裁剪；画布缓冲跟随 CSS 尺寸（桌面 132 / 手机 104），元素按比例缩放</div>
+    <div class="k">怪物标点</div><div>按类型分色：史莱姆红 / 守卫橙 / 弩手黄 / 统领紫（统领点更大）；死亡敌人立即消失；点带同色微光，低分辨率下也认得出</div>
+    <div class="k">当前目标</div><div>与 HUD 目标框同一套逻辑（9 米内最近）：脚下脉冲金环，被锁定的是谁一眼可见</div>
+    <div class="k">玩家标记</div><div>金色三角指向当前朝向，地图上方 = 世界 -Z，与主画面方位一致</div>
+    <div class="k">锚点</div><div>三个治疗锚点画青色小点，撤退路线有参照</div>
+    <div class="k">性能</div><div>2D 画布每帧重绘，单帧约 20 次 arc 填充；不参与 WebGL 像素化管线，中文可读性不受影响</div>
+  </div>
+
+  <h3>音频：程序化配乐与战吼</h3>
+  <p>配乐与音效全部用 <strong>Web Audio 程序化生成</strong>，不依赖任何外部音频文件——离线可跑、包体为零、随构建一起分发。音乐是一台小型步进音序器：A 小调 <strong>Am–F–C–G</strong> 四小节循环，贝斯走根音、琶音走三和弦、噪声合成鼓组，全部经低通滤波后并入音乐总线。</p>
+  <div class="kv">
+    <div class="k">冒险主题</div><div>108 BPM，中速推进：底鼓落 1/3 拍、军鼓落 2/4 拍、8 分琶音铺开史诗感，铺底和弦每小节起一次</div>
+    <div class="k">BOSS 主题</div><div>152 BPM，四踩底鼓 + 16 分踩镲 + 八度跳动贝斯，更快更密；切入瞬间叠一段上扫 stinger，压迫感拉满</div>
+    <div class="k">切换逻辑</div><div>每帧检测场上是否有存活 boss：有 → 切 BOSS 主题；boss 倒下 → 回到冒险主题；在同一小节边界直接切换，强调"紧张起来"的突变</div>
+    <div class="k">战吼</div><div>释放指令技瞬间合成一声"嘿 / 哈"——锯齿波声源 + 双共振峰带通 + 噪声气息，离线合成、不依赖语音库；终极技固定喊"哈"</div>
+    <div class="k">技能名呼喊</div><div>音频初始化后，用浏览器语音合成（zh-CN）念出技能名；不可用时静默回落到战吼，不阻断游戏</div>
+    <div class="k">音量与开关</div><div>音乐走独立总线，HUD 左上"♪ 音乐"可一键静音 / 恢复；音效与战吼直连输出，不受音乐静音影响</div>
+  </div>
+
+  <h3>BOSS：碎境魔将</h3>
+  <p>每逢 <strong>第 5 / 10 / 15… 裂片</strong>，场上会额外降临一只<strong>碎境魔将</strong>：2.25 倍体型、深红身躯、双角加冠，血量约为普通统领的 3 倍，并继承震击与召唤。它是该裂片的强制击杀目标——不清掉它就无法净化裂片。魔将存活期间配乐自动切到 BOSS 主题，玩家不看血条也能从音乐里听出"还没打完"。</p>
 </section>
 
 <section>
@@ -349,19 +378,23 @@
   <div class="status"><span class="tag done">已实现</span><span>384×216 低分辨率渲染管线、体素地形生成、37° 跟随镜头、硬阴影</span></div>
   <div class="status"><span class="tag done">已实现</span><span>三套独立动作：剑横扫 / 斧劈砍 / 枪突刺（各 3 段轻击 + 1 重击）、挥砍拖影、关节关键帧系统</span></div>
   <div class="status"><span class="tag done">已实现</span><span>闪避重做：有方向输入做绕髋前滚翻（带位置补偿），无输入做后撤步；攻击后半段可用闪避取消</span></div>
-  <div class="status"><span class="tag done">已实现</span><span>指令技系统：每武器 7 式（方向序列 + 攻击键），HUD 实时显示输入序列与预匹配技能名；释放瞬间自动锁怪（15 米内最近敌人，目标脚下金环反馈），普攻不受影响</span></div>
+  <div class="status"><span class="tag done">已实现</span><span>指令技系统：每武器 10 式（方向序列 + 攻击键，含 →← / ←→ / ←← 三式左右横断系），HUD 实时显示输入序列与预匹配技能名；释放瞬间自动锁怪（15 米内最近敌人，目标脚下金环反馈），普攻不受影响</span></div>
   <div class="status"><span class="tag done">已实现</span><span>三系终极技：万剑归宗（剑气 radial 射击 + 双层冲击环）/ 陨石天降（1.7 米跳砸 + 地裂）/ 横扫千军（旋身两周五段 + 风压柱）</span></div>
   <div class="status"><span class="tag done">已实现</span><span>技能特效：飞行剑气波、推进冲击环、地裂列、风压残影柱；技能命中配顿帧 50–100ms、震屏与终极慢放</span></div>
   <div class="status"><span class="tag done">已实现</span><span>格挡 / 完美弹反（含慢放）、破防条、破防双倍伤害、击退与粒子、命中顿帧</span></div>
   <div class="status"><span class="tag done">已实现</span><span>敌人 AI（巡守 / 追击 / 起手 / 收招）、锚点治疗、净化目标、通关判定</span></div>
-  <div class="status"><span class="tag done">已实现</span><span>关卡推进：无限裂片、难度四曲线、过关结算面板、部分补给；第 2 裂片起出守卫、第 3 起出弩手、第 4 起出统领</span></div>
+  <div class="status"><span class="tag done">已实现</span><span>关卡推进：无限裂片、难度四曲线、过关结算面板、部分补给；第 2 裂片起出守卫、第 3 起出弩手、第 4 起出统领、每 5 裂片降临碎境魔将（BOSS）</span></div>
   <div class="status"><span class="tag done">已实现</span><span>敌人协同：攻击令牌限制同时出手、侧翼包抄走位、收招惩罚（挥空/重击后摇全队提速）</span></div>
   <div class="status"><span class="tag done">已实现</span><span>裂境弩手（弹道 + 射击带走位）与裂境统领（震击 + 每 8.5 秒召唤）</span></div>
   <div class="status"><span class="tag done">已实现</span><span>完美闪避（慢放 + 反击窗口 ×1.6）与穿袭（翻滚切人造成伤害并回体力）</span></div>
   <div class="status"><span class="tag done">已实现</span><span>掉落物（露珠/真气）与计分系统，HUD 显示关卡、剩余敌人与分数</span></div>
   <div class="status"><span class="tag done">已实现</span><span>移动端触屏：左下虚拟摇杆（360° 模拟量移动 + 四象限搓招量化，死区 30%）+ 六动作键，与键鼠共用同一输入链路；竖屏旋转提示、安全区避让、全屏按钮、iOS 音频手势恢复、失焦自动松摇杆</span></div>
+  <div class="status"><span class="tag done">已实现</span><span>透明小地图：右上角圆形全图雷达，怪物按类型分色标点（史莱姆红/守卫橙/弩手黄/统领紫/BOSS 大红点），当前目标脉冲金环，玩家金色朝向三角，锚点青点；画布跟随 CSS 尺寸缩放</span></div>
+  <div class="status"><span class="tag done">已实现</span><span>BOSS 碎境魔将：每 5 裂片降临，2.25 倍体型 + 双角加冠 + 深红身躯，血量约统领 3 倍，继承震击与召唤，为强制击杀目标；小地图大红点 + 目标血条</span></div>
+  <div class="status"><span class="tag done">已实现</span><span>程序化配乐：Web Audio 步进音序器，冒险主题（108 BPM / Am–F–C–G）与 BOSS 主题（152 BPM 四踩 + 16 分踩镲）双轨；BOSS 存活自动切换到激昂紧凑节奏，倒下切回；HUD 音乐开关</span></div>
+  <div class="status"><span class="tag done">已实现</span><span>技能语音：释放指令技合成"嘿/哈"战吼（共振峰合成，离线可用），音频初始化后以 zh-CN 语音呼喊技能名，终极技固定"哈"</span></div>
   <div class="status"><span class="tag todo">待开发</span><span>裂片间的传送与地图层、下沉事件、滑翔与锚点弹射</span></div>
-  <div class="status"><span class="tag todo">待开发</span><span>烙印树 UI 与存档、境主多阶段战、音效与配乐</span></div>
+  <div class="status"><span class="tag todo">待开发</span><span>烙印树 UI 与存档、境主多阶段战</span></div>
   <div class="status"><span class="tag todo">待开发</span><span>手柄支持、难度选项（弹反窗口 0.22 / 0.3 / 关闭）</span></div>
 </section>
 
@@ -370,7 +403,7 @@
   <table>
     <thead><tr><th style="width:170px">风险</th><th>表现</th><th style="width:200px">对策</th></tr></thead>
     <tbody>
-      <tr><td>低分辨率下目标识别困难</td><td>玩家找不到敌人或被围攻时无法判断优先级</td><td>轮廓色阶 + 起手变色 + 屏幕外敌人指示</td></tr>
+      <tr><td>低分辨率下目标识别困难</td><td>玩家找不到敌人或被围攻时无法判断优先级</td><td>轮廓色阶 + 起手变色 + 透明小地图全图标点（怪物分色 + 目标金环，实测 13 项像素级自检全绿）</td></tr>
       <tr><td>三武器学习成本过高</td><td>玩家只用剑，其余两把沦为摆设</td><td>用敌人结构强制（守卫必须靠斧破防，悬丝者必须靠枪够到）</td></tr>
       <tr><td>弹反手感依赖输入延迟</td><td>0.22 秒窗口在 60ms 延迟下变成 0.16 秒</td><td>垂直切片先测手感；预留"输入缓冲 0.1 秒"</td></tr>
       <tr><td>体素地形手工成本</td><td>每块裂片地形制作 3–5 天</td><td>模块化地形块 + 程序化生成 + 手工修饰</td></tr>
@@ -384,7 +417,7 @@
 </section>
 
 <footer>
-  碎境勇者 · 设计文档 v1.4 · 与可玩原型 index.html 同步<br>
+  碎境勇者 · 设计文档 v1.7 · 与可玩原型 index.html 同步<br>
   文档中的数值均为当前原型实测值，可直接调参验证。
 </footer>
 

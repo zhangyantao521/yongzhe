@@ -84,6 +84,20 @@
   #comboWrap { font-size: 11px; color: #7d93b5; letter-spacing: 1px; }
   #comboNum { color: #ffd88a; font-size: 13px; }
 
+  /* 音乐开关 */
+  #musicRow {
+    margin-top: 9px; padding-top: 8px; border-top: 1px dashed #2c3b56;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 11px; letter-spacing: 1px; pointer-events: auto;
+  }
+  #musicBtn {
+    cursor: pointer; color: #8ee6c0; border: 1px solid #2f7a58;
+    padding: 2px 8px; background: rgba(16,52,36,0.5);
+  }
+  #musicBtn.off { color: #7d93b5; border-color: #33445f; background: rgba(20,28,40,0.5); }
+  #musicMode { color: #ffd88a; }
+  #musicMode.boss { color: #ff7a6b; text-shadow: 0 0 8px rgba(255,122,107,0.5); }
+
   /* 顶部中央：目标 */
   #objective {
     top: 18px; left: 50%; transform: translateX(-50%);
@@ -314,6 +328,10 @@
       <div id="ultName">万剑归宗</div>
       <div id="ultCmd">␣↓↓ + 右键</div>
     </div>
+    <div id="musicRow">
+      <span id="musicBtn">♪ 音乐 开</span>
+      <span id="musicMode">冒险</span>
+    </div>
   </div>
 
   <div id="objective" class="hud panel">
@@ -333,7 +351,7 @@
     <div class="key"><b>WASD</b>移动</div>
     <div class="key"><b>左键</b>轻击连段</div>
     <div class="key"><b>右键</b>重击破防</div>
-    <div class="key"><b>↑↑</b><b>↑↓</b><b>↓↑</b><b>↓↓</b> + 攻击 = 指令技</div>
+    <div class="key"><b>↑↑</b><b>↑↓</b><b>↓↑</b><b>↓↓</b><b>→←</b><b>←→</b><b>←←</b> + 攻击 = 指令技</div>
     <div class="key"><b>空格</b>闪避翻滚</div>
     <div class="key"><b>Shift</b>格挡/弹反</div>
     <div class="key"><b>Q</b>换武器</div>
@@ -377,7 +395,7 @@
       每净化一块裂片就会前往更深的下一块——弩手、统领在深处等你。
     </div>
     <div class="legend">
-      <span>剑 · 万剑归宗</span><span>斧 · 陨石天降</span><span>枪 · 横扫千军</span><span>指令技 · 七式</span><span>完美闪避 · 反击</span>
+      <span>剑 · 万剑归宗</span><span>斧 · 陨石天降</span><span>枪 · 横扫千军</span><span>指令技 · 十式</span><span>完美闪避 · 反击</span>
     </div>
     <button class="btn" id="startBtn">进 入 裂 片</button>
   </div>
