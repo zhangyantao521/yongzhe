@@ -353,7 +353,7 @@
     <div class="k">BOSS 主题</div><div>152 BPM，四踩底鼓 + 16 分踩镲 + 八度跳动贝斯，更快更密；切入瞬间叠一段上扫 stinger，压迫感拉满</div>
     <div class="k">切换逻辑</div><div>每帧检测场上是否有存活 boss：有 → 切 BOSS 主题；boss 倒下 → 回到冒险主题；在同一小节边界直接切换，强调"紧张起来"的突变</div>
     <div class="k">战吼</div><div>释放指令技瞬间合成一声"嘿 / 哈"——锯齿波声源 + 双共振峰带通 + 噪声气息，离线合成、不依赖语音库；终极技固定喊"哈"</div>
-    <div class="k">技能名呼喊</div><div>音频初始化后，用浏览器语音合成（zh-CN）念出技能名；不可用时静默回落到战吼，不阻断游戏</div>
+    <div class="k">技能名呼喊</div><div><strong>离线共振峰语音合成</strong>：每个技能名手工标注拼音（含声调），用 Web Audio 自建一台小型「普通话音节合成器」逐音节念出——声带锯齿源驱动三共振峰带通（F1/F2/F3 滑音），按声调做基频曲线，声母加噪声爆破 / 鼻边浊音、韵尾加鼻音。完全不依赖系统 TTS 与任何中文语音包，离线必定出声（机器人腔，非自然人声）</div>
     <div class="k">音量与开关</div><div>音乐走独立总线，HUD 左上"♪ 音乐"可一键静音 / 恢复；音效与战吼直连输出，不受音乐静音影响</div>
   </div>
 
@@ -392,7 +392,7 @@
   <div class="status"><span class="tag done">已实现</span><span>透明小地图：右上角圆形全图雷达，怪物按类型分色标点（史莱姆红/守卫橙/弩手黄/统领紫/BOSS 大红点），当前目标脉冲金环，玩家金色朝向三角，锚点青点；画布跟随 CSS 尺寸缩放</span></div>
   <div class="status"><span class="tag done">已实现</span><span>BOSS 碎境魔将：每 5 裂片降临，2.25 倍体型 + 双角加冠 + 深红身躯，血量约统领 3 倍，继承震击与召唤，为强制击杀目标；小地图大红点 + 目标血条</span></div>
   <div class="status"><span class="tag done">已实现</span><span>程序化配乐：Web Audio 步进音序器，冒险主题（108 BPM / Am–F–C–G）与 BOSS 主题（152 BPM 四踩 + 16 分踩镲）双轨；BOSS 存活自动切换到激昂紧凑节奏，倒下切回；HUD 音乐开关</span></div>
-  <div class="status"><span class="tag done">已实现</span><span>技能语音：释放指令技合成"嘿/哈"战吼（共振峰合成，离线可用），音频初始化后以 zh-CN 语音呼喊技能名，终极技固定"哈"</span></div>
+  <div class="status"><span class="tag done">已实现</span><span>技能语音：释放指令技合成"嘿/哈"战吼（共振峰合成，离线可用）；技能名用<strong>离线共振峰语音合成器</strong>逐音节念出（不依赖系统 TTS / 中文语音包），终极技固定"哈"</span></div>
   <div class="status"><span class="tag todo">待开发</span><span>裂片间的传送与地图层、下沉事件、滑翔与锚点弹射</span></div>
   <div class="status"><span class="tag todo">待开发</span><span>烙印树 UI 与存档、境主多阶段战</span></div>
   <div class="status"><span class="tag todo">待开发</span><span>手柄支持、难度选项（弹反窗口 0.22 / 0.3 / 关闭）</span></div>

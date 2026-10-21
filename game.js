@@ -1628,14 +1628,161 @@
     ns.connect(ng); ng.connect(g); g.connect(actx.destination);
     o.start(t); o.stop(t + 0.24); ns.start(t); ns.stop(t + 0.2);
   }
+  // ★ 离线中文语音合成：不依赖任何系统 TTS / 语音包 / 网络，
+  // 用 Web Audio 共振峰声道合成，把技能名逐音节"念"出来（机器人腔，但必定出声且离线可用）。
+  // 每个技能名手工标注拼音（含声调数字 1-4，5=轻声），由 MandarinSynth 解析合成。
+  const NAME_PINYIN = {
+    '裂空剑': 'lie4 kong1 jian4', '碎岩斧': 'sui4 yan2 fu3', '逐风枪': 'zhu2 feng1 qiang1',
+    '破空三连斩': 'po4 kong1 san1 lian2 zhan3', '回燕斩': 'hui2 yan4 zhan3', '升龙剑': 'sheng1 long2 jian4',
+    '惊雷刺': 'jing1 lei2 ci4', '劈山剑': 'pi1 shan1 jian4', '瞬影斩': 'shun4 ying3 zhan3',
+    '十字燕返': 'shi2 zi4 yan4 fan3', '回风斩': 'hui2 feng1 zhan3', '断流横断': 'duan4 liu2 heng2 duan4',
+    '万剑归宗': 'wan4 jian4 gui1 zong1',
+    '狂蛮冲撞': 'kuang2 man2 chong1 zhuang4', '旋风斧舞': 'xuan4 feng1 fu3 wu3', '裂地波': 'lie4 di4 bo1',
+    '崩山冲锋': 'beng1 shan1 chong1 feng1', '天崩地裂': 'tian1 beng1 di4 lie4', '瞬影砸': 'shun4 ying3 za2',
+    '横断双挥': 'heng2 duan4 shuang1 hui1', '拖斧反斩': 'tuo1 fu3 fan3 zhan3', '横断山岳': 'heng2 duan4 shan1 yue4',
+    '陨石天降': 'yun3 shi2 tian1 jiang4',
+    '疾风三刺': 'ji2 feng1 san1 ci4', '回马枪': 'hui2 ma3 qiang1', '出海蛟龙': 'chu1 hai3 jiao1 long2',
+    '惊雷贯穿': 'jing1 lei2 guan4 chuan1', '破军扫': 'po4 jun1 sao3', '瞬影刺': 'shun4 ying3 ci4',
+    '双横抹月': 'shuang1 heng2 mo3 yue4', '侧返枪': 'ce4 fan3 qiang1', '横断江': 'heng2 duan4 jiang1',
+    '横扫千军': 'heng2 sao3 qian1 jun1',
+    '碎境魔将': 'sui4 jing4 mo2 jiang1'
+  };
+  // 单元音共振峰（F1,F2,F3）Hz —— 声道形状决定音色
+  const MVOW = {
+    a: [730, 1090, 2440], e: [530, 1840, 2480], i: [270, 2290, 3010], u: [300, 870, 2240],
+    v: [250, 1700, 2600], o: [490, 900, 2410], er: [490, 1350, 1690]
+  };
+  // 韵母 → 元音轨迹（p，可多段滑音）+ 鼻韵尾（c: 'n'|'ng'|null）
+  const MFIN = {
+    a: { p: ['a'] }, o: { p: ['o'] }, e: { p: ['e'] }, i: { p: ['i'] }, u: { p: ['u'] }, v: { p: ['v'] }, er: { p: ['er'] },
+    ai: { p: ['a', 'i'] }, ei: { p: ['e', 'i'] }, ao: { p: ['a', 'u'] }, ou: { p: ['o', 'u'] },
+    an: { p: ['a'], c: 'n' }, en: { p: ['e'], c: 'n' }, ang: { p: ['a'], c: 'ng' }, eng: { p: ['e'], c: 'ng' }, ong: { p: ['o'], c: 'ng' },
+    ia: { p: ['i', 'a'] }, ie: { p: ['i', 'e'] }, ua: { p: ['u', 'a'] }, uo: { p: ['u', 'o'] }, ve: { p: ['v', 'e'] },
+    iao: { p: ['i', 'a', 'u'] }, iu: { p: ['i', 'u'] }, uai: { p: ['u', 'a', 'i'] }, ui: { p: ['u', 'e', 'i'] },
+    ian: { p: ['i', 'a'], c: 'n' }, uan: { p: ['u', 'a'], c: 'n' }, uang: { p: ['u', 'a'], c: 'ng' }, van: { p: ['v', 'a'], c: 'n' },
+    in: { p: ['i'], c: 'n' }, un: { p: ['u'], c: 'n' }, ing: { p: ['i'], c: 'ng' }, iang: { p: ['i', 'a'], c: 'ng' }, iong: { p: ['i', 'o'], c: 'ng' }
+  };
+  // 声母发音方式：stop 塞音 / aff 塞擦 / fric 擦音 / nasal 鼻 / liq 边闪；第二位 1=送气
+  const MINIT = {
+    b: ['stop', 0], p: ['stop', 1], m: ['nasal', 0], f: ['fric', 0],
+    d: ['stop', 0], t: ['stop', 1], n: ['nasal', 0], l: ['liq', 0],
+    g: ['stop', 0], k: ['stop', 1], h: ['fric', 0],
+    j: ['aff', 0], q: ['aff', 1], x: ['fric', 0],
+    zh: ['aff', 0, 1], ch: ['aff', 1, 1], sh: ['fric', 0, 1], r: ['liq', 0, 1],
+    z: ['aff', 0], c: ['aff', 1], s: ['fric', 0]
+  };
+  const MPLACE = { b: 700, p: 700, m: 700, f: 900, d: 2300, t: 2300, n: 2300, l: 2300, z: 2600, c: 2600, s: 2600,
+    g: 1500, k: 1500, h: 1500, j: 3200, q: 3200, x: 3200, zh: 2200, ch: 2200, sh: 2200, r: 2200 };
+  function splitSyllable(s) {
+    if (s[0] === 'y') {
+      if (s === 'yu') return { onset: '', fin: 'v' };
+      if (s === 'yue') return { onset: '', fin: 've' };
+      if (s === 'yun') return { onset: '', fin: 'van' };
+      if (s === 'yuan') return { onset: '', fin: 'van' };
+      if (s === 'ying') return { onset: '', fin: 'ing' };
+      if (s === 'yong') return { onset: '', fin: 'iong' };
+      const ym = { ya: 'ia', ye: 'ie', yao: 'iao', you: 'iu', yan: 'ian', yang: 'iang' };
+      if (ym[s]) return { onset: '', fin: ym[s] };
+      return { onset: '', fin: s.slice(1) };
+    }
+    if (s[0] === 'w') {
+      const wm = { wu: 'u', wa: 'ua', wo: 'uo', wai: 'uai', wei: 'ui', wan: 'uan', wen: 'en', weng: 'eng', wang: 'uang' };
+      if (wm[s]) return { onset: '', fin: wm[s] };
+      return { onset: '', fin: s.slice(1) };
+    }
+    if (s.length >= 2 && MINIT[s.slice(0, 2)]) return { onset: s.slice(0, 2), fin: s.slice(2) };
+    if (s[0] && MINIT[s[0]]) return { onset: s[0], fin: s.slice(1) };
+    return { onset: '', fin: s };
+  }
+  function f0At(tone, x) {
+    switch (tone) {
+      case 1: return 0.95;
+      case 2: return 0.74 + 0.34 * x;
+      case 3: return x < 0.5 ? 0.74 - 0.18 * (x / 0.5) : 0.56 + 0.46 * ((x - 0.5) / 0.5);
+      case 4: return 1.06 - 0.40 * x;
+      default: return 0.86;
+    }
+  }
+  function synthName(ctx, pinyin) {
+    if (!ctx) return;
+    const toks = pinyin.trim().split(/\s+/);
+    let t = ctx.currentTime + 0.02;
+    const BASE = 150;
+    for (let ti = 0; ti < toks.length; ti++) {
+      const tok = toks[ti];
+      const tone = parseInt(tok[tok.length - 1], 10) || 5;
+      const body = tok.slice(0, tok.length - 1);
+      const syl = splitSyllable(body);
+      const fin = MFIN[syl.fin] || { p: ['a'] };
+      const ons = syl.onset ? (MINIT[syl.onset] || ['stop', 0]) : null;
+      const onsetDur = ons ? 0.055 : 0.0;
+      const npts = fin.p.length;
+      const vowelDur = 0.15 + (npts - 1) * 0.07;
+      const codaDur = fin.c ? 0.07 : 0.0;
+      const total = onsetDur + vowelDur + codaDur;
+      // 声母段：噪声爆破 / 浊音鼻边音
+      if (ons) {
+        const place = MPLACE[syl.onset] || 2000;
+        const nb = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * onsetDur)), ctx.sampleRate);
+        const nd = nb.getChannelData(0);
+        for (let i = 0; i < nd.length; i++) nd[i] = (Math.random() * 2 - 1);
+        const ns = ctx.createBufferSource(); ns.buffer = nb;
+        const nf = ctx.createBiquadFilter(); nf.type = 'bandpass'; nf.frequency.value = place; nf.Q.value = 1.2;
+        const ng = ctx.createGain();
+        const voiced = (ons[0] === 'nasal' || ons[0] === 'liq');
+        ng.gain.setValueAtTime(voiced ? 0.10 : 0.16, t);
+        ng.gain.exponentialRampToValueAtTime(0.001, t + onsetDur);
+        ns.connect(nf); nf.connect(ng); ng.connect(ctx.destination);
+        ns.start(t); ns.stop(t + onsetDur);
+        if (voiced) {
+          const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = BASE * 0.6;
+          const og = ctx.createGain(); og.gain.setValueAtTime(0.08, t); og.gain.exponentialRampToValueAtTime(0.001, t + onsetDur);
+          const of = ctx.createBiquadFilter(); of.type = 'lowpass'; of.frequency.value = 500;
+          o.connect(of); of.connect(og); og.connect(ctx.destination); o.start(t); o.stop(t + onsetDur);
+        }
+      }
+      // 韵母段：声带锯齿源 + 三共振峰带通
+      const vt = t + onsetDur;
+      const src = ctx.createOscillator(); src.type = 'sawtooth';
+      const steps = 10;
+      for (let s = 0; s <= steps; s++) { const xx = s / steps; src.frequency.setValueAtTime(BASE * f0At(tone, xx), vt + vowelDur * xx); }
+      const master = ctx.createGain();
+      master.gain.setValueAtTime(0.0001, vt);
+      master.gain.exponentialRampToValueAtTime(0.20, vt + 0.012);
+      master.gain.setValueAtTime(0.20, vt + vowelDur - 0.03);
+      master.gain.exponentialRampToValueAtTime(0.001, vt + vowelDur);
+      const fp = fin.p;
+      for (let k = 0; k < 3; k++) {
+        const fb = ctx.createBiquadFilter(); fb.type = 'bandpass'; fb.Q.value = (k === 0 ? 8 : k === 1 ? 10 : 12);
+        const fg = ctx.createGain(); fg.gain.value = (k === 0 ? 1 : k === 1 ? 0.7 : 0.4);
+        for (let s = 0; s < fp.length; s++) {
+          const from = MVOW[fp[s]] ? MVOW[fp[s]][k] : MVOW.a[k];
+          const to = MVOW[fp[Math.min(s + 1, fp.length - 1)]] ? MVOW[fp[Math.min(s + 1, fp.length - 1)]][k] : MVOW.a[k];
+          const t0 = vt + vowelDur * (s / fp.length), t1 = vt + vowelDur * ((s + 1) / fp.length);
+          fb.frequency.setValueAtTime(from, t0);
+          fb.frequency.linearRampToValueAtTime(to, t1);
+        }
+        src.connect(fb); fb.connect(fg); fg.connect(master);
+      }
+      master.connect(ctx.destination);
+      src.start(vt); src.stop(vt + vowelDur);
+      // 鼻韵尾
+      if (fin.c) {
+        const ct = vt + vowelDur;
+        const co = ctx.createOscillator(); co.type = 'sawtooth'; co.frequency.value = BASE * f0At(tone, 1);
+        const cg = ctx.createGain(); cg.gain.setValueAtTime(0.14, ct); cg.gain.exponentialRampToValueAtTime(0.001, ct + codaDur);
+        const cf = ctx.createBiquadFilter(); cf.type = 'lowpass'; cf.frequency.value = fin.c === 'n' ? 900 : 600;
+        co.connect(cf); cf.connect(cg); cg.connect(ctx.destination); co.start(ct); co.stop(ct + codaDur);
+      }
+      t += total + 0.03;
+    }
+  }
   function vox(text) {
-    if (!actx || !('speechSynthesis' in window) || !text) return;
+    if (!text) return;
     try {
       voxFired++;
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = 'zh-CN'; u.rate = 1.25; u.pitch = 1.1; u.volume = 0.9;
-      window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
-    } catch (e) { /* 语音不可用时静默忽略 */ }
+      if (NAME_PINYIN[text]) synthName(actx, NAME_PINYIN[text]);
+    } catch (e) { /* 合成失败静默，不影响战吼与游戏 */ }
   }
 
   // boss 存活检测 → 自动切换激昂主题
@@ -3225,6 +3372,9 @@
     toggleMusic: function () { return Music.toggle(); },
     shoutCount: function () { return shoutCount; },
     voxFired: function () { return voxFired; },
+    synthName: function (n) { if (NAME_PINYIN[n]) synthName(actx, NAME_PINYIN[n]); },
+    namePinyin: function (n) { return NAME_PINYIN[n] || null; },
+    nameKeys: function () { return Object.keys(NAME_PINYIN); },
     bossActive: function () { return anyBossAlive(); },
     recomputeMusic: recomputeMusic,
     attack: tryAttack, dodge: doDodge, hud: updateHUD,

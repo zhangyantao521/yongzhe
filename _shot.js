@@ -740,6 +740,16 @@
       L('shoutCount=' + S.shoutCount() + ' (>' + sc0 + ')');
       L('voxFired=' + S.voxFired() + ' (>' + vf0 + ')');
 
+      // 离线合成器：每个技能名都有拼音、且能无异常合成（不依赖系统 TTS）
+      var keys = S.nameKeys(), missing = [], threw = [];
+      for (var nk = 0; nk < keys.length; nk++) {
+        var nm = keys[nk];
+        if (!S.namePinyin(nm)) missing.push(nm);
+        try { S.synthName(nm); } catch (ev) { threw.push(nm + ':' + ev.message); }
+      }
+      L('nameCount=' + keys.length + ' missing=' + missing.length + ' synthThrew=' + threw.length +
+        (threw.length ? ' (' + threw.join(',') + ')' : ''));
+
       // 静音切换
       var mm = S.toggleMusic();
       L('toggleMusic -> muted=' + mm);
