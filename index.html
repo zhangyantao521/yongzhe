@@ -335,16 +335,24 @@
     padding: 24px;
   }
   #settings .setPanel {
-    width: min(560px, 92vw); max-height:400px !important; overflow-y: scroll;
+    width: min(560px, 92vw);
+    /* 高度跟随可用视口，绝不超过屏幕；内容超高时在面板内滚动（100dvh 兼容手机地址栏伸缩） */
+    max-height: min(620px, calc(100vh - 48px));
+    max-height: min(620px, calc(100dvh - 48px));
+    overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
     margin: auto; /* 有富余空间时垂直居中；超出时退化为顶部对齐且可滚动到顶 */
     background: rgba(9,14,24,0.96); border: 2px solid #2c3b56;
     box-shadow: 0 0 0 2px rgba(5,8,15,0.9), inset 0 0 18px rgba(80,150,255,0.08);
-    padding: 18px 20px 20px; text-align: left;
+    padding: 0 20px 0; text-align: left;
   }
+  /* 标题栏吸顶：滚动时「设置 / ✕」始终可见，不会被内容推走 */
   #settings .setHead {
     display: flex; align-items: center; justify-content: space-between;
-    font-size: 18px; letter-spacing: 4px; color: #f4e3bd; margin-bottom: 12px;
-    border-bottom: 1px dashed #2c3b56; padding-bottom: 10px;
+    position: sticky; top: 0; z-index: 3;
+    margin: 0 -20px 12px; padding: 16px 20px 10px;
+    background: #0a101a;
+    font-size: 18px; letter-spacing: 4px; color: #f4e3bd;
+    border-bottom: 1px dashed #2c3b56;
   }
   #settings .setHead .x {
     cursor: pointer; background: none; border: 1px solid #33445f; color: #b9c8dd;
@@ -368,21 +376,27 @@
   #settings .qRow { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #cfdaea; }
   #settings .qRow .qn { width: 42px; color: #ffd88a; flex: none; }
   #settings select { flex: 1; font-family: inherit; font-size: 12px; color: #efe6d2; background: #141c2c; border: 1px solid #34435e; padding: 4px 6px; }
-  #settings .setFoot { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; border-top: 1px dashed #2c3b56; padding-top: 14px; }
+  /* 底部操作条吸底：滚动时「恢复默认 / 完成」始终可见 */
+  #settings .setFoot {
+    display: flex; justify-content: space-between; align-items: center;
+    position: sticky; bottom: 0; z-index: 3;
+    margin: 16px -20px 0; padding: 12px 20px 20px;
+    background: #0a101a; border-top: 1px dashed #2c3b56;
+  }
   #settings .btn { margin-top: 0; padding: 9px 26px; font-size: 13px; }
 
   /* 横屏 / 矮屏：收紧设置弹窗间距，尽量整屏显示不滚动 */
   @media (orientation: landscape) and (max-height: 500px) {
     #settings { padding: 10px; }
-    #settings .setPanel { max-height: calc(100vh - 20px); padding: 12px 14px 14px; }
-    #settings .setHead { font-size: 15px; margin-bottom: 8px; padding-bottom: 7px; }
+    #settings .setPanel { max-height: calc(100vh - 20px); max-height: calc(100dvh - 20px); padding: 0 14px 0; }
+    #settings .setHead { font-size: 15px; margin: 0 -14px 8px; padding: 10px 14px 7px; }
     #settings section { margin: 9px 0; }
     #settings h3 { margin-bottom: 6px; }
     #settings .volRow { margin-bottom: 6px; }
     #settings .row { margin-bottom: 5px; }
     #settings .qSlots { gap: 4px; }
     #settings .hint { margin-bottom: 5px; line-height: 1.45; }
-    #settings .setFoot { margin-top: 10px; padding-top: 9px; }
+    #settings .setFoot { margin: 10px -14px 0; padding: 9px 14px 14px; }
     #settings .btn { padding: 7px 18px; font-size: 12px; }
   }
 
@@ -575,7 +589,7 @@
   <!-- 设置浮层：音量 / 手柄位置 / 快捷技能栏 -->
   <div id="settings" class="screen hide">
     <div class="setPanel">
-      <div class="setHead"><span>设 置1</span><button class="x" id="setClose">✕</button></div>
+      <div class="setHead"><span>设 置</span><button class="x" id="setClose">✕</button></div>
 
       <section>
         <h3>音量</h3>

@@ -1,15 +1,12 @@
-level=1 enemies=7
-stick-ui el=1 knob=1 ticks=4
-stick full-tilt dz=-2.30 (期望≈-2.30) state={"active":false,"kx":0,"ky":0,"mag":0,"sector":null}
-stick half-tilt dz=-1.58 (期望≈-1.58) 速比=0.69 (期望≈0.69)
-stick deadzone dz=0.00 (期望 0) sector=null
-stick diagonal dx=1.61 dz=-1.61 (期望均≈1.6) facing=2.36 (期望≈2.36)
-stick quantize(0.8,-0.6) sector=r (期望 r)
-stick cmd uu-light=破空三连斩 dmg=43.0 (期望 破空三连斩 / 43)
-stick cmd ud-light=回燕斩 dmg=30.0 (期望 回燕斩 / 30)
-stick cmd du-light=升龙剑 dmg=20.0 (期望 升龙剑 / 20)
-stick cmd dd-heavy=劈山剑 dmg=40.0 (期望 劈山剑 / 40)
-stick release-stop dz=0.000 (期望 0)
-stick single-flick state=light (期望 light)
-check=ok
-errors=none
+errs=
+typeofSR=object openSettings=function start=function
+afterStart running=true
+panelHidden=false
+viewport=826x238
+panelRect=133,10 560x218
+panel scrollH=704 clientH=214 overflowY=auto maxH=218px
+overlay scrollH=238 clientH=238
+foot=171..226 面板底=228 首屏可见=true
+lastQRow bottom=651 超出面板=true
+select=305..331 footBg=rgb(10, 16, 26) footZ=3 footPos=sticky
+footer顶探针命中=DIV.setFoot#
