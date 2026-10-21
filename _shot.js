@@ -754,6 +754,11 @@
       var mm = S.toggleMusic();
       L('toggleMusic -> muted=' + mm);
       S.setMusicMode('adventure');
+
+      // 语音包：index.html 引入 voicepack.js 后，window.VOICE_PACK 应存在且含 34 条人声片段
+      // （实际 mp3 解码由浏览器运行时保证；mp3 文件有效性由 Node 侧 headless 校验）
+      L('hasVoicePack=' + S.hasVoicePack() + ' packKeys=' + S.voicePackKeys().length + ' (expect true/34)');
+
       L('AUDIO-OK');
     }
 

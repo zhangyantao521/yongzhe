@@ -1869,12 +1869,59 @@
     src.connect(chain.out);
     src.start(ctx.currentTime + 0.01);
   }
+  // ---- 语音包（语言包 / 自己录制）加载：优先播放预录/预生成的人声片段，
+  // 缺失或解码失败时回落到离线共振峰合成（robot 腔），保证必定出声、离线可用。
+  // 片段两种来源（优先级自上而下）：
+  //   1) window.VOICE_PACK[name] = "data:audio/...;base64,...."  —— 录音棚 voice-studio.html 导出，单文件最省事
+  //   2) voice/<名称>.mp3|wav|ogg                                —— gen_voicepack.py 用 edge-tts 预生成的语言包
+  const VOICE_DIR = 'voice/';
+  const VOICE_EXT = ['.mp3', '.wav', '.ogg'];
+  const voiceCache = {};   // name -> Promise<AudioBuffer|null>
+  function b64ToBuf(b64) {
+    const s = (b64.split(',')[1] || b64);
+    const bin = atob(s), len = bin.length, out = new ArrayBuffer(len), u = new Uint8Array(out);
+    for (let i = 0; i < len; i++) u[i] = bin.charCodeAt(i);
+    return out;
+  }
+  function decodeToBuf(arrayBuffer) {
+    return new Promise(function (res, rej) { actx.decodeAudioData(arrayBuffer, res, rej); });
+  }
+  function loadVoiceClip(name) {
+    if (voiceCache[name]) return voiceCache[name];
+    const p = (async function () {
+      // 1) 内联 base64 语音包
+      if (typeof window.VOICE_PACK === 'object' && window.VOICE_PACK && window.VOICE_PACK[name]) {
+        try { return await decodeToBuf(b64ToBuf(window.VOICE_PACK[name])); } catch (e) { /* 回退 */ }
+      }
+      // 2) voice/ 目录下的音频文件
+      for (let i = 0; i < VOICE_EXT.length; i++) {
+        try {
+          const r = await fetch(VOICE_DIR + encodeURIComponent(name) + VOICE_EXT[i]);
+          if (r && r.ok) { const ab = await r.arrayBuffer(); return await decodeToBuf(ab); }
+        } catch (e) { /* 该后缀不存在，继续尝试下一个 */ }
+      }
+      return null;
+    })();
+    voiceCache[name] = p;
+    return p;
+  }
+  function playVoiceClip(name) {
+    return loadVoiceClip(name).then(function (buf) {
+      if (!buf) return false;
+      const src = actx.createBufferSource(); src.buffer = buf;
+      src.connect(getVoxChain(actx).out);
+      src.start(actx.currentTime + 0.005);
+      return true;
+    }).catch(function () { return false; });
+  }
   function vox(text) {
     if (!text) return;
-    try {
-      voxFired++;
-      if (NAME_PINYIN[text]) synthName(actx, NAME_PINYIN[text]);
-    } catch (e) { /* 合成失败静默，不影响战吼与游戏 */ }
+    voxFired++;
+    if (!actx) return;   // 音频未初始化则不出声（不影响战吼与游戏）
+    // 优先人声片段；缺失/失败则回落离线合成
+    playVoiceClip(text)
+      .then(function (ok) { if (!ok && NAME_PINYIN[text]) synthName(actx, NAME_PINYIN[text]); })
+      .catch(function () { if (NAME_PINYIN[text]) synthName(actx, NAME_PINYIN[text]); });
   }
 
   // boss 存活检测 → 自动切换激昂主题
@@ -3468,6 +3515,9 @@
     namePinyin: function (n) { return NAME_PINYIN[n] || null; },
     nameKeys: function () { return Object.keys(NAME_PINYIN); },
     bossActive: function () { return anyBossAlive(); },
+    hasVoicePack: function () { return !!(typeof window.VOICE_PACK === 'object' && window.VOICE_PACK); },
+    voicePackKeys: function () { return window.VOICE_PACK ? Object.keys(window.VOICE_PACK) : []; },
+    voxLoad: function (n) { return loadVoiceClip(n); },   // 返回 Promise<AudioBuffer|null>，验证片段可解码
     recomputeMusic: recomputeMusic,
     attack: tryAttack, dodge: doDodge, hud: updateHUD,
     // 触屏联调：合成触点驱动摇杆 / 动作键（与真实手指同链路）

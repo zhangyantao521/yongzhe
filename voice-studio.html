@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>碎境勇者 · 技能名录音棚</title>
+<style>
+  :root{ --bg:#0e0f1a; --card:#191b2e; --line:#2b2e47; --accent:#ffd88a; --ok:#6bdca0; --rec:#ff6b6b; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:#e8e9f3; font:14px/1.5 system-ui,"PingFang SC","Microsoft YaHei",sans-serif; padding:18px; }
+  h1{ font-size:18px; margin:0 0 4px; color:var(--accent); }
+  .sub{ color:#9aa0c0; margin:0 0 16px; font-size:12px; }
+  .bar{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:0 0 16px; }
+  button{ background:var(--card); color:#e8e9f3; border:1px solid var(--line); border-radius:8px; padding:8px 14px; cursor:pointer; font-size:13px; }
+  button:hover{ border-color:var(--accent); }
+  button.primary{ background:var(--accent); color:#1a1a1a; border-color:var(--accent); font-weight:600; }
+  button:disabled{ opacity:.4; cursor:not-allowed; }
+  .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px; display:flex; flex-direction:column; gap:8px; }
+  .name{ font-size:16px; font-weight:600; }
+  .ctrl{ display:flex; gap:6px; }
+  .ctrl button{ flex:1; padding:6px 0; font-size:12px; }
+  .rec.on{ background:var(--rec); color:#fff; border-color:var(--rec); animation:pulse 1s infinite; }
+  @keyframes pulse{ 50%{ opacity:.55; } }
+  .status{ font-size:11px; color:#9aa0c0; min-height:14px; }
+  .status.ok{ color:var(--ok); }
+  .status.rec{ color:var(--rec); }
+  .count{ font-size:12px; color:#9aa0c0; }
+  audio{ width:100%; height:30px; }
+  .hint{ background:#14162a; border:1px solid var(--line); border-radius:8px; padding:12px; font-size:12px; color:#b9bee0; margin-bottom:16px; }
+  code{ background:#000; padding:1px 5px; border-radius:4px; color:var(--accent); }
+</style>
+</head>
+<body>
+  <h1>碎境勇者 · 技能名录音棚</h1>
+  <p class="sub">对着麦克风逐个念出技能名，导出后游戏就会播放你的真人声音（完全离线）。没录的名字自动用内置合成音兜底。</p>
+
+  <div class="hint">
+    导出后二选一：<br>
+    ① 单文件最省事：下载 <code>voicepack.js</code>，在 <code>index.html</code> 末尾加一行 <code>&lt;script src="voicepack.js"&gt;&lt;/script&gt;</code>。<br>
+    ② 用文件夹：逐个下载 <code>.wav</code>，放进游戏目录下的 <code>voice/</code> 文件夹即可（游戏会自动读取，无需改代码）。
+  </div>
+
+  <div class="bar">
+    <button id="recAll" class="primary">🎙 一键连录（按顺序）</button>
+    <button id="stopAll">■ 停止</button>
+    <button id="exportPack">⬇ 导出 voicepack.js</button>
+    <button id="exportWav">⬇ 逐个导出 .wav</button>
+    <span class="count" id="count">已录 0 / 0</span>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+<script>
+const NAMES = [
+  "裂空剑","碎岩斧","逐风枪",
+  "破空三连斩","回燕斩","升龙剑","惊雷刺","劈山剑","瞬影斩",
+  "十字燕返","回风斩","断流横断",
+  "万剑归宗",
+  "狂蛮冲撞","旋风斧舞","裂地波","崩山冲锋","天崩地裂","瞬影砸",
+  "横断双挥","拖斧反斩","横断山岳",
+  "陨石天降",
+  "疾风三刺","回马枪","出海蛟龙","惊雷贯穿","破军扫","瞬影刺",
+  "双横抹月","侧返枪","横断江",
+  "横扫千军",
+  "碎境魔将"
+];
+
+const recs = {}; // name -> { blob, url }
+let mediaStream = null, mr = null, current = null;
+
+const grid = document.getElementById('grid');
+const countEl = document.getElementById('count');
+function updateCount(){ let n=0; for(const k in recs) n++; countEl.textContent = `已录 ${n} / ${NAMES.length}`; }
+
+async function ensureStream(){
+  if(!mediaStream){
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio:true });
+  }
+  return mediaStream;
+}
+
+function buildCard(name){
+  const card = document.createElement('div'); card.className='card';
+  const nm = document.createElement('div'); nm.className='name'; nm.textContent = name;
+  const ctrl = document.createElement('div'); ctrl.className='ctrl';
+  const recBtn = document.createElement('button'); recBtn.className='rec'; recBtn.textContent='录';
+  const playBtn = document.createElement('button'); playBtn.textContent='放'; playBtn.disabled=true;
+  const redoBtn = document.createElement('button'); redoBtn.textContent='重'; redoBtn.disabled=true;
+  ctrl.append(recBtn, playBtn, redoBtn);
+  const audio = document.createElement('audio'); audio.controls=true;
+  const st = document.createElement('div'); st.className='status'; st.textContent='未录';
+  card.append(nm, ctrl, audio, st);
+  grid.appendChild(card);
+
+  function setRecUI(on){
+    recBtn.classList.toggle('on', on);
+    recBtn.textContent = on ? '停' : '录';
+    st.className = 'status ' + (on?'rec':'');
+    st.textContent = on ? '录音中…' : (recs[name] ? '已录 ✓' : '未录');
+  }
+  recBtn.onclick = async ()=>{
+    if(mr){ // 停止当前
+      stopRec(); setRecUI(false); return;
+    }
+    try{
+      const stream = await ensureStream();
+      mr = new MediaRecorder(stream);
+      const chunks = [];
+      mr.ondataavailable = e=>{ if(e.data.size) chunks.push(e.data); };
+      mr.onstop = ()=>{
+        const blob = new Blob(chunks, { type: mr.mimeType || 'audio/webm' });
+        if(recs[name] && recs[name].url) URL.revokeObjectURL(recs[name].url);
+        recs[name] = { blob, url: URL.createObjectURL(blob), ext: (mr.mimeType||'webm').includes('wav')?'wav':'webm' };
+        audio.src = recs[name].url;
+        playBtn.disabled = false; redoBtn.disabled = false;
+        st.className='status ok'; st.textContent='已录 ✓';
+        mr = null; current = null;
+        updateCount();
+      };
+      mr.start(); current = name; setRecUI(true);
+    }catch(e){ st.textContent='无法访问麦克风：'+e.message; }
+  };
+  playBtn.onclick = ()=>{ if(recs[name]) audio.play(); };
+  redoBtn.onclick = ()=>{ delete recs[name]; audio.removeAttribute('src'); playBtn.disabled=true; redoBtn.disabled=true; st.textContent='未录'; updateCount(); };
+}
+
+NAMES.forEach(buildCard);
+updateCount();
+
+function stopRec(){
+  if(mr && mr.state!=='inactive'){ try{ mr.stop(); }catch(e){} }
+}
+
+document.getElementById('stopAll').onclick = ()=>{
+  if(mr){ stopRec(); document.querySelectorAll('.rec.on').forEach(b=>{ b.classList.remove('on'); b.textContent='录'; }); }
+};
+
+// 一键连录：依次录每个未录的名字
+document.getElementById('recAll').onclick = async ()=>{
+  for(const name of NAMES){
+    if(recs[name]) continue;
+    const card = [...grid.children].find(c=>c.querySelector('.name').textContent===name);
+    const btn = card.querySelector('.rec');
+    btn.click();
+    await new Promise(res=>{
+      const iv = setInterval(()=>{ if(!mr){ clearInterval(iv); res(); } }, 150);
+    });
+    // 等用户停（或自动 2.2s 后停）
+    await new Promise(res=> setTimeout(res, 2200));
+    if(mr) btn.click();
+    await new Promise(res=> setTimeout(res, 300));
+  }
+  alert('连录结束。没录的可单独补录，然后点导出。');
+};
+
+// 导出 voicepack.js（base64 单文件）
+document.getElementById('exportPack').onclick = async ()=>{
+  const pack = {};
+  for(const name of NAMES){
+    if(!recs[name]) continue;
+    const buf = await recs[name].blob.arrayBuffer();
+    const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+    const mime = recs[name].ext==='wav' ? 'audio/wav' : 'audio/webm';
+    pack[name] = `data:${mime};base64,` + b64;
+  }
+  if(!Object.keys(pack).length){ alert('还没有录任何名字'); return; }
+  const js = '// 碎境勇者 · 技能名人声语音包（录音棚导出）。在 index.html 末尾引入即可。\nwindow.VOICE_PACK = ' + JSON.stringify(pack, null, 0) + ';\n';
+  download(new Blob([js], {type:'text/javascript'}), 'voicepack.js');
+  alert(`已导出 ${Object.keys(pack).length} 条到 voicepack.js`);
+};
+
+// 逐个导出 .wav / .webm（放进 voice/ 文件夹）
+document.getElementById('exportWav').onclick = ()=>{
+  let n=0;
+  for(const name of NAMES){
+    if(!recs[name]) continue;
+    download(recs[name].blob, name + '.' + recs[name].ext); n++;
+  }
+  if(!n) alert('还没有录任何名字'); else alert(`已触发下载 ${n} 个音频文件，请把它们放进游戏目录的 voice/ 文件夹`);
+};
+
+function download(blob, filename){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+</script>
+</body>
+</html>
