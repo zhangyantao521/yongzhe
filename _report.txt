@@ -1,8 +1,1 @@
-viewport=504x692
-panel=464x620 scrollH=849 clientH=616
-可滚动=true
-touch-action html=auto body=auto #stage=none #settings=pan-y panel=pan-y
-面板内 touchmove 被 preventDefault=false
-画布上 touchmove 被 preventDefault=true
-滚动后 scrollTop=233 / max=233
-吸底「完成」=585..654 面板底=656 可见=true
+(no report: timeout)
