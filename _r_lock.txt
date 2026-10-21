@@ -1,0 +1,11 @@
+level=1 enemies=7
+lock back-turn facing=3.14 (期望≈3.14) dmg=20.0 (期望 20，未锁定则为 0)
+lock side-turn facing=0.00 (期望≈0) dmg=34.0 (期望 34)
+lock nearest facing=3.14 (期望≈3.14) nearDmg=40.0 (期望 40) farDmg=0.0 (期望 0)
+lock no-target facing=1.20 (期望 1.20) state=skill
+lock out-of-range facing=0.00 (期望 0) dmg=0.0 (期望 0)
+lock plain-attack facing=0.00 (期望 0) dmg=0.0 (期望 0，普攻不锁)
+lock touch-chain awayFacing=3.14 lockFacing=0.00 (期望≈0) dmg=40.0 (期望 40)
+lock lr-cmd facing=3.14 (期望≈3.14) dmg=30.0 (期望 30)
+check=ok
+errors=none

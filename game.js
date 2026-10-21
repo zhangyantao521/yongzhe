@@ -1455,18 +1455,27 @@
 
   /* ------------------------- 音效 ------------------------- */
   let actx = null;
+  // 三条独立增益总线：技能音效 / 语音喊招 / 背景音乐总控
+  // 由设置页分别调音量，全部挂在 destination 下
+  let sfxBus = null, voxBus = null, musicMaster = null;
+  let MUSIC_VOL = 0.8, SFX_VOL = 0.9, VOX_VOL = 1.0;   // 初始默认，启动时被持久化设置覆盖
   function initAudio() {
     if (!actx) {
       try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { actx = null; }
     }
     // iOS：AudioContext 需在用户手势中创建并显式恢复
     if (actx && actx.state === 'suspended' && actx.resume) actx.resume();
+    if (actx && !sfxBus) {
+      sfxBus = actx.createGain(); sfxBus.gain.value = SFX_VOL; sfxBus.connect(actx.destination);
+      voxBus = actx.createGain(); voxBus.gain.value = VOX_VOL; voxBus.connect(actx.destination);
+      musicMaster = actx.createGain(); musicMaster.gain.value = MUSIC_VOL; musicMaster.connect(actx.destination);
+    }
   }
   function sfx(kind) {
     if (!actx) return;
     const t = actx.currentTime;
     const o = actx.createOscillator(), g = actx.createGain();
-    o.connect(g); g.connect(actx.destination);
+    o.connect(g); g.connect(sfxBus || actx.destination);
     let f0 = 440, f1 = 220, type = 'square', dur = 0.09, vol = 0.06;
     if (kind === 'swing') { f0 = 300; f1 = 120; type = 'triangle'; dur = 0.08; vol = 0.04; }
     else if (kind === 'hit') { f0 = 180; f1 = 60; type = 'square'; dur = 0.11; vol = 0.07; }
@@ -1562,7 +1571,7 @@
     }
     function start(m) {
       if (!actx) return;
-      if (!bus) { bus = actx.createGain(); bus.gain.value = 0.0001; bus.connect(actx.destination); }
+      if (!bus) { bus = actx.createGain(); bus.gain.value = 0.0001; bus.connect(musicMaster || actx.destination); }
       mode = m || 'adventure'; playing = true; step16 = 0; barCount = 0;
       nextTime = actx.currentTime + 0.06;
       bus.gain.cancelScheduledValues(actx.currentTime);
@@ -1601,7 +1610,16 @@
       isMuted: function () { return muted; },
       getMode: function () { return mode; },
       isPlaying: function () { return playing; },
-      scheduled: function () { return scheduled; }
+      scheduled: function () { return scheduled; },
+      // 背景音乐总控音量（与 envelope 解耦，设置页调用）
+      setMusicVol: function (v) {
+        MUSIC_VOL = clamp01(v == null ? MUSIC_VOL : v);
+        if (musicMaster && actx) {
+          musicMaster.gain.cancelScheduledValues(actx.currentTime);
+          musicMaster.gain.setValueAtTime(musicMaster.gain.value, actx.currentTime);
+          musicMaster.gain.linearRampToValueAtTime(MUSIC_VOL, actx.currentTime + 0.1);
+        }
+      }
     };
   })();
 
@@ -1625,7 +1643,7 @@
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.16, t + 0.02);
     g.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
     o.connect(bp1); o.connect(bp2); bp1.connect(g); bp2.connect(g);
-    ns.connect(ng); ng.connect(g); g.connect(actx.destination);
+    ns.connect(ng); ng.connect(g); g.connect(sfxBus || actx.destination);
     o.start(t); o.stop(t + 0.24); ns.start(t); ns.stop(t + 0.2);
   }
   // ★ 离线中文语音合成：不依赖任何系统 TTS / 语音包 / 网络，
@@ -1719,7 +1737,7 @@
     const comp = ctx.createDynamicsCompressor();
     comp.threshold.value = -9; comp.knee.value = 14; comp.ratio.value = 12; comp.attack.value = 0.003; comp.release.value = 0.16;
     const g = ctx.createGain(); g.gain.value = 1.0;
-    hp.connect(lp); lp.connect(pres); pres.connect(comp); comp.connect(g); g.connect(ctx.destination);
+    hp.connect(lp); lp.connect(pres); pres.connect(comp); comp.connect(g); g.connect(voxBus || ctx.destination);
     voxChain = { ctx: ctx, out: hp };
     return voxChain;
   }
@@ -2015,6 +2033,7 @@
     if (k === ' ' && !e.repeat) dashT = performance.now() / 1000;
     if (DIR_KEYS[k] && !e.repeat) pushDir(DIR_KEYS[k]);
     if (!running) return;
+    if (k >= '1' && k <= '6') { fireQuick(+k - 1); return; }
     if (k === ' ') doDodge();
     if (k === 'shift') { input.guardDown = true; startGuard(); }
     if (k === 'q') swapWeapon();
@@ -2054,6 +2073,7 @@
     if (!el) return;
     let id = null;
     el.addEventListener('touchstart', function (e) {
+      if (layoutEditing) return;   // 编辑布局时动作键不响应，改用拖拽摆放
       e.preventDefault();
       if (id !== null) return;
       id = e.changedTouches[0].identifier;
@@ -2072,6 +2092,7 @@
     el.addEventListener('touchend', end);
     el.addEventListener('touchcancel', end);
     el.addEventListener('mousedown', function (e) {
+      if (layoutEditing) return;
       e.preventDefault();
       if (id !== null) return;
       id = 'm'; el.classList.add('press');
@@ -2160,6 +2181,7 @@
     stickSet(dx / STICK_MAX_R, dy / STICK_MAX_R);
   }
   function stickStart(id, x, y) {
+    if (layoutEditing) return;   // 编辑布局时摇杆不响应，改用拖拽摆放
     stick.active = true; stick.id = id;
     if (stickEl) stickEl.classList.add('on');
     stickApply(x, y);
@@ -3404,6 +3426,7 @@
     }
     running = true;
     clock.getDelta();
+    renderQBar();   // 进入游戏后按已保存的快捷栏渲染
     toast('第 1 裂片 · 击败全部侵蚀体', 2.4);
   }
 
@@ -3618,6 +3641,18 @@
       best.state = 'idle'; best.hp = best.maxHp; best.breakv = 0;
       return best;
     },
+    /* 设置页联调钩子 */
+    openSettings: openSettings,
+    closeSettings: closeSettings,
+    getSettings: function () { return JSON.parse(JSON.stringify(SET)); },
+    setVol: function (m, s, v) { if (m != null) applyMusicVol(m); if (s != null) applySfxVol(s); if (v != null) applyVoxVol(v); return { music: MUSIC_VOL, sfx: SFX_VOL, vox: VOX_VOL }; },
+    getVol: function () { return { music: MUSIC_VOL, sfx: SFX_VOL, vox: VOX_VOL }; },
+    setQuick: function (arr) { SET.quick = (arr || []).slice(0, 6); while (SET.quick.length < 6) SET.quick.push(null); saveSettings(); renderQBar(); return SET.quick.slice(); },
+    getQuick: function () { return SET.quick.slice(); },
+    setLayout: function (o) { if (o.leftHand != null) SET.leftHand = !!o.leftHand; if (o.stick) SET.layout.stick = o.stick; if (o.abtns) SET.layout.abtns = o.abtns; applyLayout(); saveSettings(); },
+    getLayout: function () { return JSON.parse(JSON.stringify({ leftHand: SET.leftHand, layout: SET.layout })); },
+    fireQuick: fireQuick,
+    setEditing: function (v) { editing = !!v; },
     report: function () {
       return {
         state: hero.state, hp: hero.hp, weapon: hero.weapon,
@@ -3626,4 +3661,249 @@
       };
     }
   };
+
+  /* ===================== 设置：音量 / 手柄位置 / 快捷技能栏 ===================== */
+  const SET_KEY = 'sr_settings_v1';
+  const SET_DEFAULT = {
+    music: 0.8, sfx: 0.9, vox: 1.0,
+    leftHand: false,
+    layout: { stick: null, abtns: null },
+    quick: [null, null, null, null, null, null]
+  };
+  let SET = loadSettings();
+  // 用持久化设置覆盖默认音量（总线在 initAudio 中按这些值创建）
+  MUSIC_VOL = SET.music; SFX_VOL = SET.sfx; VOX_VOL = SET.vox;
+
+  let layoutEditing = false;   // 编辑布局时屏蔽摇杆/动作键自身响应（供 stickStart/bindPress 读取）
+  let editing = false;         // 设置页“编辑布局”开关
+  let setWasRunning = false;   // 打开设置前是否在游戏中（用于关闭后恢复）
+
+  function loadSettings() {
+    try {
+      const raw = localStorage.getItem(SET_KEY);
+      if (raw) {
+        const o = JSON.parse(raw);
+        const out = Object.assign({}, SET_DEFAULT, o);
+        out.layout = Object.assign({}, SET_DEFAULT.layout, o.layout || {});
+        out.quick = (o.quick && o.quick.length) ? o.quick.slice(0, 6) : SET_DEFAULT.quick.slice();
+        while (out.quick.length < 6) out.quick.push(null);
+        return out;
+      }
+    } catch (e) { /* localStorage 不可用或解析失败 → 用默认 */ }
+    return JSON.parse(JSON.stringify(SET_DEFAULT));
+  }
+  function saveSettings() {
+    try { localStorage.setItem(SET_KEY, JSON.stringify(SET)); } catch (e) { }
+  }
+
+  /* ---------- 音量 ---------- */
+  function applyMusicVol(v) { SET.music = clamp01(v); MUSIC_VOL = SET.music; if (Music.setMusicVol) Music.setMusicVol(SET.music); }
+  function applySfxVol(v) { SET.sfx = clamp01(v); SFX_VOL = SET.sfx; if (sfxBus) sfxBus.gain.value = SFX_VOL; }
+  function applyVoxVol(v) { SET.vox = clamp01(v); VOX_VOL = SET.vox; if (voxBus) voxBus.gain.value = VOX_VOL; }
+
+  /* ---------- 手柄位置 ---------- */
+  function applyLayout() {
+    const st = document.getElementById('stick'), ab = document.getElementById('abtns');
+    if (!st || !ab) return;
+    if (SET.leftHand) {
+      st.style.left = 'auto'; st.style.right = '14px'; st.style.top = 'auto'; st.style.bottom = '18px';
+      ab.style.left = '16px'; ab.style.right = 'auto'; ab.style.top = 'auto'; ab.style.bottom = '18px';
+      return;
+    }
+    if (SET.layout.stick) {
+      st.style.left = SET.layout.stick.x + 'px'; st.style.top = SET.layout.stick.y + 'px';
+      st.style.right = 'auto'; st.style.bottom = 'auto';
+    } else { st.style.left = ''; st.style.top = ''; st.style.right = ''; st.style.bottom = ''; }
+    if (SET.layout.abtns) {
+      ab.style.left = SET.layout.abtns.x + 'px'; ab.style.top = SET.layout.abtns.y + 'px';
+      ab.style.right = 'auto'; ab.style.bottom = 'auto';
+    } else { ab.style.left = ''; ab.style.top = ''; ab.style.right = ''; ab.style.bottom = ''; }
+  }
+  function saveLayoutFromDOM() {
+    const st = document.getElementById('stick'), ab = document.getElementById('abtns');
+    SET.layout.stick = st.style.left ? { x: parseInt(st.style.left, 10), y: parseInt(st.style.top, 10) } : null;
+    SET.layout.abtns = ab.style.left ? { x: parseInt(ab.style.left, 10), y: parseInt(ab.style.top, 10) } : null;
+    SET.leftHand = false;
+    saveSettings();
+  }
+  function enableDrag(el) {
+    if (!el) return;
+    el.style.touchAction = 'none';
+    el.addEventListener('pointerdown', function (e) {
+      if (!editing) return;
+      e.preventDefault();
+      const r = el.getBoundingClientRect();
+      const offX = e.clientX - r.left, offY = e.clientY - r.top;
+      function move(ev) {
+        el.style.left = (ev.clientX - offX) + 'px';
+        el.style.top = (ev.clientY - offY) + 'px';
+        el.style.right = 'auto'; el.style.bottom = 'auto';
+      }
+      function up() { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); }
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up);
+    });
+  }
+
+  /* ---------- 快捷技能栏 ---------- */
+  function allSkillOptions() {
+    const opts = [{ v: '', t: '— 空 —' }];
+    for (let w = 0; w < WEAPONS.length; w++) {
+      SKILLS[w].forEach(function (sk, i) {
+        opts.push({ v: w + ':' + i, t: WEAPONS[w].name + '·' + sk.name });
+      });
+    }
+    return opts;
+  }
+  function renderQBar() {
+    const qbarEl = document.getElementById('qbar');
+    if (!qbarEl) return;
+    qbarEl.innerHTML = '';
+    let any = false;
+    for (let n = 0; n < 6; n++) {
+      const val = SET.quick[n];
+      const b = document.createElement('div');
+      b.className = 'qslot' + (val ? '' : ' empty');
+      const qn = document.createElement('div'); qn.className = 'qn'; qn.textContent = (n + 1);
+      const nm = document.createElement('div'); nm.className = 'qname';
+      if (val) { any = true; const p = val.split(':'); const sk = SKILLS[+p[0]][+p[1]]; nm.textContent = sk.name; }
+      else nm.textContent = '空';
+      b.appendChild(qn); b.appendChild(nm);
+      if (val) b.addEventListener('click', (function (idx) { return function () { fireQuick(idx); }; })(n));
+      qbarEl.appendChild(b);
+    }
+    qbarEl.style.display = any ? 'flex' : 'none';
+  }
+  function fireQuick(n) {
+    if (!started || !running) return;
+    const val = SET.quick[n];
+    if (!val) return;
+    const p = val.split(':'), w = +p[0], i = +p[1];
+    const sk = SKILLS[w][i];
+    const cur = SKILLS[hero.weapon];
+    let target = null;
+    for (let k = 0; k < cur.length; k++) if (cur[k].name === sk.name) { target = cur[k]; break; }
+    if (!target) { toast('切换至' + WEAPONS[w].name + ' 释放「' + sk.name + '」'); return; }
+    const now = performance.now() / 1000;
+    cmdSeq.length = 0;
+    const dirs = target.cmd.charAt(0) === 'k' ? target.cmd.slice(1) : target.cmd;
+    for (let c = 0; c < dirs.length; c++) cmdSeq.push({ d: dirs.charAt(c), t: now });
+    dashT = target.cmd.charAt(0) === 'k' ? now : -1;
+    tryAttack(target.btn);
+  }
+
+  /* ---------- 设置浮层开关 ---------- */
+  const setEl = document.getElementById('settings');
+  function openSettings() {
+    setWasRunning = (started && running);
+    if (setWasRunning) running = false;
+    syncSettingsUI();
+    if (setEl) setEl.classList.remove('hide');
+  }
+  function closeSettings() {
+    if (setEl) setEl.classList.add('hide');
+    if (setWasRunning && started) running = true;
+    saveSettings();
+  }
+  function syncSettingsUI() {
+    const volMusic = document.getElementById('volMusic'), volMusicV = document.getElementById('volMusicV');
+    const volSfx = document.getElementById('volSfx'), volSfxV = document.getElementById('volSfxV');
+    const volVox = document.getElementById('volVox'), volVoxV = document.getElementById('volVoxV');
+    const leftHandEl = document.getElementById('leftHand');
+    const editLayoutBtn = document.getElementById('editLayout');
+    const layoutHint = document.getElementById('layoutHint');
+    if (volMusic) { volMusic.value = Math.round(SET.music * 100); if (volMusicV) volMusicV.textContent = volMusic.value + '%'; }
+    if (volSfx) { volSfx.value = Math.round(SET.sfx * 100); if (volSfxV) volSfxV.textContent = volSfx.value + '%'; }
+    if (volVox) { volVox.value = Math.round(SET.vox * 100); if (volVoxV) volVoxV.textContent = volVox.value + '%'; }
+    if (leftHandEl) leftHandEl.checked = !!SET.leftHand;
+    const sels = document.querySelectorAll('#qSlots select');
+    for (let n = 0; n < sels.length; n++) sels[n].value = SET.quick[n] || '';
+    editing = false;
+    if (editLayoutBtn) { editLayoutBtn.textContent = '编辑布局'; editLayoutBtn.classList.remove('on'); }
+    if (layoutHint) layoutHint.textContent = '';
+  }
+  function buildQSlots() {
+    const qSlotsEl = document.getElementById('qSlots');
+    if (!qSlotsEl) return;
+    qSlotsEl.innerHTML = '';
+    const opts = allSkillOptions();
+    for (let n = 0; n < 6; n++) {
+      const row = document.createElement('div'); row.className = 'qRow';
+      const lab = document.createElement('span'); lab.className = 'qn'; lab.textContent = '槽 ' + (n + 1);
+      const sel = document.createElement('select'); sel.dataset.slot = n;
+      opts.forEach(function (o) { const op = document.createElement('option'); op.value = o.v; op.textContent = o.t; sel.appendChild(op); });
+      sel.value = SET.quick[n] || '';
+      sel.addEventListener('change', function () { SET.quick[n] = sel.value || null; saveSettings(); renderQBar(); });
+      row.appendChild(lab); row.appendChild(sel);
+      qSlotsEl.appendChild(row);
+    }
+  }
+
+  /* ---------- 接线 ---------- */
+  (function wireSettings() {
+    const setBtnEl = document.getElementById('setBtn');
+    const startSetBtnEl = document.getElementById('startSetBtn');
+    const setCloseEl = document.getElementById('setClose');
+    const setDoneEl = document.getElementById('setDone');
+    const volMusic = document.getElementById('volMusic'), volMusicV = document.getElementById('volMusicV');
+    const volSfx = document.getElementById('volSfx'), volSfxV = document.getElementById('volSfxV');
+    const volVox = document.getElementById('volVox'), volVoxV = document.getElementById('volVoxV');
+    const leftHandEl = document.getElementById('leftHand');
+    const editLayoutBtn = document.getElementById('editLayout');
+    const resetLayoutBtn = document.getElementById('resetLayout');
+    const layoutHint = document.getElementById('layoutHint');
+    const setResetAllBtn = document.getElementById('setResetAll');
+
+    if (setBtnEl) setBtnEl.addEventListener('click', openSettings);
+    if (startSetBtnEl) startSetBtnEl.addEventListener('click', openSettings);
+    if (setCloseEl) setCloseEl.addEventListener('click', closeSettings);
+    if (setDoneEl) setDoneEl.addEventListener('click', closeSettings);
+
+    if (volMusic) volMusic.addEventListener('input', function () { applyMusicVol(+volMusic.value / 100); if (volMusicV) volMusicV.textContent = volMusic.value + '%'; });
+    if (volSfx) volSfx.addEventListener('input', function () { applySfxVol(+volSfx.value / 100); if (volSfxV) volSfxV.textContent = volSfx.value + '%'; });
+    if (volVox) volVox.addEventListener('input', function () { applyVoxVol(+volVox.value / 100); if (volVoxV) volVoxV.textContent = volVox.value + '%'; });
+
+    if (leftHandEl) leftHandEl.addEventListener('change', function () {
+      SET.leftHand = leftHandEl.checked; SET.layout = { stick: null, abtns: null };
+      applyLayout(); saveSettings();
+      if (layoutHint) layoutHint.textContent = SET.leftHand ? '已切换为左手布局' : '已切换为右手布局';
+    });
+    if (editLayoutBtn) editLayoutBtn.addEventListener('click', function () {
+      editing = !editing;
+      if (editing) {
+        editLayoutBtn.textContent = '完成编辑'; editLayoutBtn.classList.add('on');
+        if (layoutHint) layoutHint.textContent = '拖动摇杆与按键到合适位置，再点“完成编辑”';
+      } else {
+        editLayoutBtn.textContent = '编辑布局'; editLayoutBtn.classList.remove('on');
+        if (layoutHint) layoutHint.textContent = '已保存当前位置';
+        saveLayoutFromDOM();
+      }
+    });
+    if (resetLayoutBtn) resetLayoutBtn.addEventListener('click', function () {
+      SET.leftHand = false; SET.layout = { stick: null, abtns: null };
+      if (leftHandEl) leftHandEl.checked = false;
+      applyLayout(); saveSettings();
+      if (layoutHint) layoutHint.textContent = '已重置为默认位置';
+    });
+    if (setResetAllBtn) setResetAllBtn.addEventListener('click', function () {
+      SET = JSON.parse(JSON.stringify(SET_DEFAULT));
+      MUSIC_VOL = SET.music; SFX_VOL = SET.sfx; VOX_VOL = SET.vox;
+      if (Music.setMusicVol) Music.setMusicVol(SET.music);
+      if (sfxBus) sfxBus.gain.value = SFX_VOL;
+      if (voxBus) voxBus.gain.value = VOX_VOL;
+      applyLayout(); buildQSlots(); renderQBar(); syncSettingsUI(); saveSettings();
+      if (layoutHint) layoutHint.textContent = '已恢复默认设置';
+    });
+
+    enableDrag(document.getElementById('stick'));
+    enableDrag(document.getElementById('abtns'));
+    buildQSlots();
+    applyLayout();
+    renderQBar();
+  })();
+
+  /* 游戏中按 Esc 关闭设置 */
+  window.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && setEl && !setEl.classList.contains('hide')) closeSettings();
+  });
 })();

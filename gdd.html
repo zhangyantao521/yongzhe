@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>碎境勇者 · 游戏设计文档 v1.8</title>
+<title>碎境勇者 · 游戏设计文档 v1.9</title>
 <style>
   :root {
     --paper: #faf8f2;
@@ -99,7 +99,7 @@
 <div class="wrap">
 
 <header class="cover">
-  <div class="kicker">GAME DESIGN DOCUMENT · v1.8</div>
+  <div class="kicker">GAME DESIGN DOCUMENT · v1.9</div>
   <h1>碎境勇者</h1>
   <p class="sub">Shattered Realm — 三维像素 / 动作冒险 / 大陆探索</p>
   <div class="meta">
@@ -416,8 +416,43 @@
   </table>
 </section>
 
+<section>
+  <h2><span class="no">11</span>设置系统</h2>
+  <p class="lede">游戏内右上齿轮与起始页"设置"按钮均可进入设置浮层，覆盖<strong>三档独立音量</strong>、<strong>触屏手柄布局</strong>与<strong>六槽快捷技能栏</strong>；全部写入 localStorage（键 <code>sr_settings_v1</code>），下次启动自动覆盖默认值。</p>
+
+  <h3>三档独立音量</h3>
+  <p>音频走 Web Audio 的三条独立增益总线，互不干扰，各自可实时调：</p>
+  <table>
+    <thead><tr><th style="width:150px">总线</th><th>用途</th><th style="width:120px">默认</th></tr></thead>
+    <tbody>
+      <tr><td><strong>技能音效</strong> sfxBus</td><td>挥砍、命中、技能、闪避等战斗 SFX</td><td class="num">0.9</td></tr>
+      <tr><td><strong>语音喊招</strong> voxBus</td><td>战吼"嘿/哈"与技能名人声（终极技呼喊技能名）</td><td class="num">1.0</td></tr>
+      <tr><td><strong>背景音乐</strong> musicMaster</td><td>BGM 总控（探险 / 战斗 / BOSS 模式切换均挂在其下）</td><td class="num">0.8</td></tr>
+    </tbody>
+  </table>
+  <p class="note">三个滑块 0–100% 实时改对应 <code>GainNode.gain</code>；背景音乐额外经 <code>Music.setMusicVol</code> 做淡变，避免拖拽爆音。三条总线在 <code>initAudio</code> 内一次性建好并挂在 <code>destination</code> 下，未出声时改音量也立即生效。</p>
+
+  <h3>操作手柄位置</h3>
+  <p>仅触屏可调整（虚拟摇杆 <code>#stick</code> + 动作键 <code>#abtns</code>），三种来源按优先级覆盖：</p>
+  <div class="kv">
+    <div class="k">左手模式</div><div>勾选后摇杆移到右下、动作键移到左下，单手拇指操作更顺；会清空自定义坐标。</div>
+    <div class="k">拖拽编辑</div><div>点"编辑布局"进入可拖拽态，拖动两元件到合适位置后点"完成编辑"保存像素坐标；编辑态临时屏蔽摇杆/按键自身响应，避免误触。</div>
+    <div class="k">重置</div><div>"重置布局"恢复默认（右手、默认坐标）；"恢复默认设置"一键还原全部设置。</div>
+  </div>
+
+  <h3>快捷技能栏</h3>
+  <p>底部六槽（<code>#qbar</code>），每槽从"空 + 三武器全部技能"中下拉绑定一项，跨武器亦可绑：</p>
+  <ul>
+    <li><strong>桌面</strong>：按 <code>1~6</code> 直接释放对应槽；若当前武器没有该技能，给出"切换至 X 释放「技能名」"提示而非静默失败。</li>
+    <li><strong>触屏</strong>：点按槽位触发。</li>
+    <li><strong>释放</strong>：注入对应指令序列（cmdSeq + dashT）后走 <code>tryAttack</code>，与搓招同源、共享自动锁怪。</li>
+    <li>空槽不渲染，整条 qbar 隐藏，不打扰纯搓招玩家。</li>
+  </ul>
+  <p class="note">设置与快捷栏均经 <code>?m=settings</code> 逐帧自检：默认结构、三档音量独立读写、6 槽渲染与技能名、左手 / 自定义布局、localStorage 持久化、fireQuick 注入与跨武器提示——全部报告 SETTINGS-OK、errors=none。旧模式（sim/lock/map/stick/touch/audio）回归全绿，设置模块加载无副作用。</p>
+</section>
+
 <footer>
-  碎境勇者 · 设计文档 v1.8 · 与可玩原型 index.html 同步<br>
+  碎境勇者 · 设计文档 v1.9 · 与可玩原型 index.html 同步<br>
   文档中的数值均为当前原型实测值，可直接调参验证。
 </footer>
 

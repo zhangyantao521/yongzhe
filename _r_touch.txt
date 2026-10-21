@@ -1,0 +1,19 @@
+level=1 enemies=7
+touch-ui body=off stick=1 ticks=4 knob=1 abtns=6 ultCmd="␣↓↓ + 右键"
+dpad-hold dz=-1.94 (期望 < -1.5)
+touch sword uu-light=破空三连斩 dmg=43.0 (期望 破空三连斩 / 43) pre[hp=100 st=100 dead=false state=idle]
+touch sword ud-light=回燕斩 dmg=30.0 (期望 回燕斩 / 30) pre[hp=100 st=100 dead=false state=idle]
+touch sword du-light=升龙剑 dmg=20.0 (期望 升龙剑 / 20) pre[hp=100 st=100 dead=false state=idle]
+touch sword uu-heavy=惊雷刺 dmg=34.0 (期望 惊雷刺 / 34) pre[hp=100 st=100 dead=false state=idle]
+touch sword ULT=万剑归宗 dmg=60.0 (期望 万剑归宗 / 60) pre[hp=100 st=84 dead=false state=idle]
+touch axe uu-heavy=崩山冲锋 dmg=48.0 (期望 崩山冲锋 / 48) pre[hp=100 st=100 dead=false state=idle]
+touch axe ULT=陨石天降 dmg=88.0 (期望 陨石天降 / 88) pre[hp=100 st=84 dead=false state=idle]
+touch spear dd-heavy=破军扫 dmg=44.0 (期望 破军扫 / 44) pre[hp=100 st=100 dead=false state=idle]
+touch spear ULT=横扫千军 dmg=140.0 (期望 横扫千军 / 140) pre[hp=100 st=84 dead=false state=idle]
+touch dodge-btn state=dodge (期望 dodge)
+touch guard-btn hold=guard release=idle (期望 guard / idle)
+touch swap-btn 0->1 (期望 0->1)
+touch heal-btn state=idle hp=100 (期望 idle)
+touch plain-light state=light (期望 light)
+check=ok
+errors=none

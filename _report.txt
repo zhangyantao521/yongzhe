@@ -1,36 +1,20 @@
 level=1 enemies=7
-plain-attack state=light (期望 light)
-sword uu-light dmg=43.0 (cfg 12+12+19=43)
-sword ud-light dmg=30.0 (cfg 15+15=30)
-sword du-light dmg=20.0 (cfg 20)
-sword uu-heavy dmg=34.0 (cfg 34)
-sword dd-heavy dmg=40.0 (cfg 40)
-sword ku-light dmg=16.0 (cfg 16)
-sword ULT dmg=60.0 (cfg 60)
-axe uu-light dmg=38.0 (cfg 16+22=38)
-axe du-light dmg=22.0 (cfg 22)
-axe uu-heavy dmg=48.0 (cfg 24+24=48)
-axe dd-heavy dmg=46.0 (cfg 46)
-axe ULT dmg=88.0 (cfg 88)
-spear uu-light dmg=35.0 (cfg 10+10+15=35)
-spear ud-light dmg=22.0 (cfg 22)
-spear uu-heavy dmg=30.0 (cfg 30)
-spear dd-heavy dmg=44.0 (cfg 22+22=44)
-spear ULT dmg=140.0 (cfg 28x5=140)
-sword lr-light name=十字燕返 dmg=30.0 (期望 十字燕返 / 13+17=30)
-sword rl-light name=回风斩 dmg=20.0 (期望 回风斩 / 20)
-sword ll-heavy name=断流横断 dmg=44.0 (期望 断流横断 / 22+22=44)
-axe lr-light name=横断双挥 dmg=40.0 (期望 横断双挥 / 17+23=40)
-axe rl-light name=拖斧反斩 dmg=26.0 (期望 拖斧反斩 / 26)
-axe ll-heavy name=横断山岳 dmg=46.0 (期望 横断山岳 / 23+23=46)
-spear lr-light name=双横抹月 dmg=26.0 (期望 双横抹月 / 11+15=26)
-spear rl-light name=侧返枪 dmg=22.0 (期望 侧返枪 / 22)
-spear ll-heavy name=横断江 dmg=44.0 (期望 横断江 / 22+22=44)
-cross-check ud-light name=回燕斩 (期望 回燕斩)
-no-cmd attack state=light (期望 light)
-cast state=skill skill=破空三连斩 st=100->88
-perfect-dodge hp=0.0 counter=1.40 (期望 0 / >0)
-after-next level=2 enemies=10
-orbs=0 score=120
+--- audio / music / voice self-check ---
+audioOn=true playing=true mode=adventure
+scheduled=2 (>=1)
+mode=adventure (expect adventure)
+muted=false (expect false)
+setMusicMode(boss) -> mode=boss (expect boss)
+levelCfg(5).boss=1 (expect 1)
+levelCfg(4).boss=0 (expect 0)
+boss type=boss alive=true
+bossActive=true mode=boss (expect true/boss)
+after boss dead mode=adventure (expect adventure)
+shoutCount=1 (>0)
+voxFired=1 (>0)
+nameCount=34 missing=0 synthThrew=0
+toggleMusic -> muted=true
+hasVoicePack=true packKeys=34 (expect true/34)
+AUDIO-OK
 check=ok
 errors=none

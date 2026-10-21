@@ -762,6 +762,78 @@
       L('AUDIO-OK');
     }
 
+    if (mode === 'settings') {
+      /* ============ 设置页：音量 / 手柄位置 / 快捷技能栏 ============ */
+      // 1. 默认设置结构（三档音量 + 左手 + 布局 + 6 槽快捷栏）
+      var d0 = S.getSettings();
+      L('def music=' + d0.music + ' sfx=' + d0.sfx + ' vox=' + d0.vox +
+        ' leftHand=' + d0.leftHand + ' quickLen=' + d0.quick.length +
+        ' layout=' + JSON.stringify(d0.layout));
+
+      // 2. 音频总线可用（sfx/vox/music 三条独立增益挂在 destination 下）
+      L('audioOn=' + S.audioOn());
+
+      // 3. 三档音量独立设置与回读
+      var v1 = S.setVol(0.5, 0.3, 0.7);
+      L('setVol music=' + v1.music + ' sfx=' + v1.sfx + ' vox=' + v1.vox);
+      var v2 = S.getVol();
+      L('getVol music=' + v2.music + ' sfx=' + v2.sfx + ' vox=' + v2.vox);
+
+      // 4. 快捷技能栏：绑定三槽，验证渲染与技能名
+      S.equip(0); // 当前武器=剑，便于 fireQuick 同武器注入
+      var q1 = S.setQuick(['0:0', '1:2', null, '2:4', null, null]);
+      L('setQuick=' + JSON.stringify(q1));
+      var slots = document.querySelectorAll('#qbar .qslot');
+      L('qbarSlots=' + slots.length + ' visible=' + (document.getElementById('qbar').style.display !== 'none'));
+      var names = [];
+      for (var qi = 0; qi < slots.length; qi++) {
+        var nmEl = slots[qi].querySelector('.qname');
+        names.push(nmEl ? nmEl.textContent : '?');
+      }
+      L('qbarNames=' + JSON.stringify(names));
+      L('getQuick=' + JSON.stringify(S.getQuick()));
+
+      // 5. 空栏 → qbar 隐藏
+      S.setQuick([null, null, null, null, null, null]);
+      L('emptyQbarVisible=' + (document.getElementById('qbar').style.display !== 'none'));
+
+      // 6. 手柄位置：左手模式（摇杆移到右侧、动作键移到左侧）
+      S.setLayout({ leftHand: true });
+      var stL = document.getElementById('stick'), abL = document.getElementById('abtns');
+      L('leftHand stickRight=' + stL.style.right + ' abtnsLeft=' + abL.style.left + ' flag=' + S.getLayout().leftHand);
+
+      // 7. 手柄位置：自定义坐标（先退出左手）
+      S.setLayout({ leftHand: false, stick: { x: 120, y: 500 }, abtns: { x: 800, y: 520 } });
+      L('custom stickLeft=' + stL.style.left + ' stickTop=' + stL.style.top +
+        ' abtnsLeft=' + abL.style.left + ' abtnsTop=' + abL.style.top);
+
+      // 8. 持久化：localStorage 含 sr_settings_v1 且含 quick 字段
+      var raw = null;
+      try { raw = localStorage.getItem('sr_settings_v1'); } catch (e) {}
+      var parsed = false;
+      if (raw) { try { parsed = Array.isArray(JSON.parse(raw).quick); } catch (e2) {} }
+      L('persistRawExists=' + (raw != null) + ' parsedQuick=' + parsed);
+
+      // 9. fireQuick 实际注入（started&&running 已为真）：同武器槽应触发技能
+      S.setQuick(['0:0', null, null, null, null, null]); // 0:0=破空三连斩(剑)
+      S.cmdReset();
+      S.fireQuick(0);
+      var pz = S.pose();
+      L('fireQuick0 state=' + pz.st + ' skill=' + pz.skill);
+      // 跨武器槽：当前为剑，槽指枪技能 → 应给切换提示而非报错
+      S.setQuick(['2:5', null, null, null, null, null]); // 2:5=瞬影刺(枪)
+      try { S.fireQuick(0); L('fireQuickCross state=' + S.pose().st); }
+      catch (ef) { L('fireQuickCross THREW ' + ef.message); }
+
+      // 10. 打开/关闭设置浮层
+      S.openSettings();
+      L('openSettings hidden=' + document.getElementById('settings').classList.contains('hide'));
+      S.closeSettings();
+      L('closeSettings hidden=' + document.getElementById('settings').classList.contains('hide'));
+
+      L('SETTINGS-OK');
+    }
+
     if (mode === 'boss') {
       /* ============ boss 外观截图 ============ */
       S.clearField();

@@ -299,6 +299,78 @@
     #abtns { transform: scale(0.88); transform-origin: bottom right; }
     #stick { transform: scale(0.88); transform-origin: bottom left; }
   }
+
+  /* ================= 设置 ================= */
+  #setBtn {
+    position: fixed; top: 18px; left: 300px; z-index: 20;
+    padding: 6px 12px; font-family: inherit; font-size: 12px; letter-spacing: 1px;
+    color: #b9c8dd; background: rgba(9,14,24,0.78); border: 2px solid #2c3b56; cursor: pointer;
+  }
+  #setBtn:hover { color: #ffd88a; border-color: #4a5d80; }
+  body.touch #setBtn { top: 14px; right: 130px; left: auto; }
+
+  #settings .setPanel {
+    width: min(560px, 92vw); max-height: 84vh; overflow-y: auto;
+    background: rgba(9,14,24,0.96); border: 2px solid #2c3b56;
+    box-shadow: 0 0 0 2px rgba(5,8,15,0.9), inset 0 0 18px rgba(80,150,255,0.08);
+    padding: 18px 20px 20px; text-align: left;
+  }
+  #settings .setHead {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 18px; letter-spacing: 4px; color: #f4e3bd; margin-bottom: 12px;
+    border-bottom: 1px dashed #2c3b56; padding-bottom: 10px;
+  }
+  #settings .setHead .x {
+    cursor: pointer; background: none; border: 1px solid #33445f; color: #b9c8dd;
+    font-family: inherit; font-size: 14px; padding: 2px 9px;
+  }
+  #settings section { margin: 14px 0; }
+  #settings h3 { font-size: 13px; letter-spacing: 2px; color: #8ee6c0; margin-bottom: 9px; }
+  #settings .volRow { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; font-size: 12px; color: #cfdaea; }
+  #settings .volRow label { width: 76px; flex: none; }
+  #settings input[type=range] { flex: 1; accent-color: #ffd88a; }
+  #settings .volVal { width: 44px; text-align: right; color: #ffd88a; flex: none; }
+  #settings .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; font-size: 12px; color: #cfdaea; }
+  #settings .sbtn {
+    font-family: inherit; font-size: 12px; letter-spacing: 1px; color: #d9b6f2;
+    background: rgba(40,22,60,0.7); border: 1px solid #64408a; padding: 5px 12px; cursor: pointer;
+  }
+  #settings .sbtn.ghost { color: #9db1cc; background: rgba(20,28,40,0.6); border-color: #33445f; }
+  #settings .sbtn.on { color: #ffd88a; border-color: #8a6b2f; background: rgba(64,48,18,0.7); }
+  #settings .hint { color: #7d93b5; font-size: 11px; line-height: 1.6; display: block; margin-bottom: 8px; }
+  #settings .qSlots { display: flex; flex-direction: column; gap: 7px; }
+  #settings .qRow { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #cfdaea; }
+  #settings .qRow .qn { width: 42px; color: #ffd88a; flex: none; }
+  #settings select { flex: 1; font-family: inherit; font-size: 12px; color: #efe6d2; background: #141c2c; border: 1px solid #34435e; padding: 4px 6px; }
+  #settings .setFoot { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; border-top: 1px dashed #2c3b56; padding-top: 14px; }
+  #settings .btn { margin-top: 0; padding: 9px 26px; font-size: 13px; }
+
+  /* 起始页按钮组 */
+  .startBtns { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+  .btn.ghost { background: #1b2740; color: #b9c8dd; box-shadow: 4px 4px 0 #16203a; }
+  .btn.ghost:hover { transform: translate(1px,1px); box-shadow: 3px 3px 0 #16203a; }
+
+  /* 快捷技能栏 */
+  #qbar {
+    position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+    z-index: 12; display: none; gap: 8px; pointer-events: auto;
+  }
+  #qbar .qslot {
+    width: 62px; height: 62px; border-radius: 10px;
+    background: rgba(13,20,34,0.82); border: 2px solid #3b4c69;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 10px; color: #cfdaea; cursor: pointer; user-select: none;
+    box-shadow: 2px 2px 0 rgba(5,8,15,0.6), inset 0 0 10px rgba(80,150,255,0.08);
+    text-align: center; line-height: 1.15; padding: 2px;
+  }
+  #qbar .qslot .qn { font-size: 9px; color: #ffd88a; }
+  #qbar .qslot .qname { font-size: 10px; }
+  #qbar .qslot.empty { opacity: 0.4; }
+  #qbar .qslot:active { transform: translate(1px,1px); }
+  @media (max-width: 620px) {
+    #qbar { transform: translateX(-50%) scale(0.82); transform-origin: bottom center; }
+    #setBtn { font-size: 11px; padding: 5px 9px; }
+  }
 </style>
 </head>
 <body>
@@ -397,7 +469,10 @@
     <div class="legend">
       <span>剑 · 万剑归宗</span><span>斧 · 陨石天降</span><span>枪 · 横扫千军</span><span>指令技 · 十式</span><span>完美闪避 · 反击</span>
     </div>
-    <button class="btn" id="startBtn">进 入 裂 片</button>
+    <div class="startBtns">
+      <button class="btn" id="startBtn">进 入 裂 片</button>
+      <button class="btn ghost" id="startSetBtn">设 置</button>
+    </div>
   </div>
 
   <div id="winScreen" class="screen hide">
@@ -405,6 +480,50 @@
     <div class="sub" id="winText">你击碎了这片区域的侵蚀…但更深的裂境仍在震动。</div>
     <button class="btn" id="againBtn">前 往 下 一 裂 片</button>
   </div>
+
+  <!-- 设置浮层：音量 / 手柄位置 / 快捷技能栏 -->
+  <div id="settings" class="screen hide">
+    <div class="setPanel">
+      <div class="setHead"><span>设 置</span><button class="x" id="setClose">✕</button></div>
+
+      <section>
+        <h3>音量</h3>
+        <div class="volRow"><label>背景音乐</label><input type="range" id="volMusic" min="0" max="100"><span class="volVal" id="volMusicV">80%</span></div>
+        <div class="volRow"><label>技能音效</label><input type="range" id="volSfx" min="0" max="100"><span class="volVal" id="volSfxV">90%</span></div>
+        <div class="volRow"><label>语音喊招</label><input type="range" id="volVox" min="0" max="100"><span class="volVal" id="volVoxV">100%</span></div>
+      </section>
+
+      <section>
+        <h3>操作手柄位置</h3>
+        <span class="hint">触屏时拖动可自由摆放摇杆与按键；也可一键切换左手/右手布局。</span>
+        <div class="row">
+          <label><input type="checkbox" id="leftHand"> 左手模式（摇杆在右 · 按键在左）</label>
+        </div>
+        <div class="row">
+          <button class="sbtn" id="editLayout">编辑布局</button>
+          <button class="sbtn ghost" id="resetLayout">重置位置</button>
+          <span class="hint" id="layoutHint"></span>
+        </div>
+      </section>
+
+      <section>
+        <h3>快捷技能栏</h3>
+        <span class="hint">把常用技能放进快捷栏：桌面按 <b>1~6</b> 触发，触屏直接点按。当前武器没有该技能时会提示切换。</span>
+        <div class="qSlots" id="qSlots"></div>
+      </section>
+
+      <div class="setFoot">
+        <button class="sbtn ghost" id="setResetAll">恢复默认</button>
+        <button class="btn" id="setDone">完 成</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 快捷技能栏（运行时渲染） -->
+  <div id="qbar"></div>
+
+  <!-- 设置入口（游戏中） -->
+  <button id="setBtn">⚙ 设置</button>
 
   <script src="three.min.js"></script>
   <!-- 技能名人声语音包（edge-tts 预生成 / 录音棚导出）。缺失时游戏自动回落到内置离线合成，不影响运行。 -->
