@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>碎境勇者 · 游戏设计文档 v1.7</title>
+<title>碎境勇者 · 游戏设计文档 v1.8</title>
 <style>
   :root {
     --paper: #faf8f2;
@@ -99,7 +99,7 @@
 <div class="wrap">
 
 <header class="cover">
-  <div class="kicker">GAME DESIGN DOCUMENT · v1.7</div>
+  <div class="kicker">GAME DESIGN DOCUMENT · v1.8</div>
   <h1>碎境勇者</h1>
   <p class="sub">Shattered Realm — 三维像素 / 动作冒险 / 大陆探索</p>
   <div class="meta">
@@ -353,7 +353,7 @@
     <div class="k">BOSS 主题</div><div>152 BPM，四踩底鼓 + 16 分踩镲 + 八度跳动贝斯，更快更密；切入瞬间叠一段上扫 stinger，压迫感拉满</div>
     <div class="k">切换逻辑</div><div>每帧检测场上是否有存活 boss：有 → 切 BOSS 主题；boss 倒下 → 回到冒险主题；在同一小节边界直接切换，强调"紧张起来"的突变</div>
     <div class="k">战吼</div><div>释放指令技瞬间合成一声"嘿 / 哈"——锯齿波声源 + 双共振峰带通 + 噪声气息，离线合成、不依赖语音库；终极技固定喊"哈"</div>
-    <div class="k">技能名呼喊</div><div><strong>离线共振峰语音合成</strong>：每个技能名手工标注拼音（含声调），用 Web Audio 自建一台小型「普通话音节合成器」逐音节念出——声带锯齿源驱动三共振峰带通（F1/F2/F3 滑音），按声调做基频曲线，声母加噪声爆破 / 鼻边浊音、韵尾加鼻音。完全不依赖系统 TTS 与任何中文语音包，离线必定出声（机器人腔，非自然人声）</div>
+    <div class="k">技能名呼喊</div><div><strong>离线共振峰语音合成</strong>：每个技能名手工标注拼音（含声调），用 Web Audio 自建「普通话音节合成器」逐音节念出，<strong>完全不依赖系统 TTS 与任何中文语音包，离线必定出声</strong>。v1.8 重构清晰度：改用<strong>加性共振峰（AudioBuffer 逐采样渲染）</strong>替代旧版高 Q 窄带通——元音由多次谐波 × 共振峰包络合成，饱满自然；声母按<strong>成阻部位着色噪声 + F2 过渡</strong>（区分 b/d/g 的关键）；输出经<strong>去齿音 + 2.5kHz 存在感提升 + 限幅</strong>主链，相对 BGM 更突出、不爆音（机器人腔，非自然人声）</div>
     <div class="k">音量与开关</div><div>音乐走独立总线，HUD 左上"♪ 音乐"可一键静音 / 恢复；音效与战吼直连输出，不受音乐静音影响</div>
   </div>
 
@@ -417,7 +417,7 @@
 </section>
 
 <footer>
-  碎境勇者 · 设计文档 v1.7 · 与可玩原型 index.html 同步<br>
+  碎境勇者 · 设计文档 v1.8 · 与可玩原型 index.html 同步<br>
   文档中的数值均为当前原型实测值，可直接调参验证。
 </footer>
 

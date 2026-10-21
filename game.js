@@ -1703,11 +1703,136 @@
       default: return 0.86;
     }
   }
+  // ---- 离线中文语音合成（重写：加性共振峰 + 缓冲渲染，清晰度大幅提升）----
+  // 旧版用高 Q 窄带通直接滤锯齿波，元音能量被压成极窄几条线、又尖又糊、且相对 BGM 偏小。
+  // 新版：在 AudioBuffer 里用「多次谐波 × 共振峰包络」逐采样合成（元音饱满自然），
+  // 叠加按成阻部位着色的辅音噪声与 F2 过渡（区分 b/d/g 的关键），再经
+  // 去齿音 + 2.5kHz 存在感提升 + 限幅主链输出，保证听清且不爆音。
+  const VOX_GAP = 0.02;       // 音节间停顿，避免糊在一起
+  const VOX_BASE = 178;       // 基频（少年英雄腔，比旧 150 更亮更清晰）
+  let voxChain = null;
+  function getVoxChain(ctx) {
+    if (voxChain && voxChain.ctx === ctx) return voxChain;
+    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 85;     // 去低频隆隆
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 5000;     // 去高频刺耳
+    const pres = ctx.createBiquadFilter(); pres.type = 'peaking'; pres.frequency.value = 2500; pres.Q.value = 1.1; pres.gain.value = 7; // 抬辅音清晰度
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -9; comp.knee.value = 14; comp.ratio.value = 12; comp.attack.value = 0.003; comp.release.value = 0.16;
+    const g = ctx.createGain(); g.gain.value = 1.0;
+    hp.connect(lp); lp.connect(pres); pres.connect(comp); comp.connect(g); g.connect(ctx.destination);
+    voxChain = { ctx: ctx, out: hp };
+    return voxChain;
+  }
+  function voxSq(x) { return x * x; }
+  function formantsFor(v) { return MVOW[v] || MVOW.a; }
+  // 声母 → 成阻部位（决定过渡音 F2，是分清 b/d/g 的关键）
+  const VOX_PLACE = {
+    b: 'labial', p: 'labial', m: 'labial', f: 'labiodental',
+    d: 'alveolar', t: 'alveolar', n: 'alveolar', l: 'alveolar',
+    z: 'dental', c: 'dental', s: 'dental',
+    zh: 'retroflex', ch: 'retroflex', sh: 'retroflex', r: 'retroflex',
+    j: 'palatal', q: 'palatal', x: 'palatal',
+    g: 'velar', k: 'velar', h: 'glottal'
+  };
+  const VOX_NOISE = { labial: 1100, labiodental: 1900, dental: 5200, alveolar: 4200, retroflex: 3000, palatal: 3400, velar: 1800, glottal: 1200 };
+  // 成阻段（辅音向元音过渡的起点）共振峰
+  const VOX_CLS = {
+    labial: [320, 900, 2500], labiodental: [320, 1000, 2500], dental: [320, 1800, 2500],
+    alveolar: [320, 1700, 2500], retroflex: [320, 1400, 2500], palatal: [320, 2200, 2600],
+    velar: [320, 1200, 2500], glottal: [400, 1500, 2500]
+  };
+  // 浊鼻/边音自身的共振峰
+  const VOX_NAS = { labial: [250, 800, 2500], alveolar: [250, 1000, 2500], dental: [250, 1700, 2500] };
+  // 加性共振峰：按当前 F1/F2/F3 与基频合成单帧（返回约 [-1.5,1.5]）
+  function vowelFrame(ph, f0, F1, F2, F3) {
+    const Nh = Math.max(8, Math.min(26, Math.floor(3400 / f0)));
+    let s = 0;
+    for (let h = 1; h <= Nh; h++) {
+      const hf = h * f0;
+      let w = 1.0;
+      w += 1.0 / (1 + voxSq((hf - F1) / 60));   // F1
+      w += 0.62 / (1 + voxSq((hf - F2) / 95));  // F2
+      w += 0.34 / (1 + voxSq((hf - F3) / 130)); // F3
+      w *= 1 / (1 + h * 0.018);                 // 声门谱斜率，去刺
+      s += w * Math.sin(ph * h);
+    }
+    return s * 0.42;
+  }
+  // 把单个音节写入共享缓冲 out（从 off 起），返回写入采样数
+  function writeSyllable(out, off, sr, plan, BASE) {
+    const N = plan.N;
+    const ons = plan.ons, tone = plan.tone, fps = plan.fps, onset = plan.onset, clsF = plan.clsF;
+    const onDur = plan.onDur, vDur = plan.vDur, coDur = plan.coDur;
+    const place = onset ? VOX_PLACE[onset] : null;
+    const onS = Math.floor(onDur * sr), vS = Math.floor(vDur * sr), coS = Math.floor(coDur * sr);
+    const aS = Math.floor(sr * 0.012), rS = Math.floor(sr * 0.03);   // 元音起/落
+    const trans = Math.min(vS, Math.floor(sr * 0.05));              // 成阻→元音过渡
+    const nCenter = ons ? (VOX_NOISE[place] || 2000) : 2000;
+    const nAlpha = Math.min(0.92, nCenter / sr * 2.2);
+    const voicedOns = ons && (ons[0] === 'nasal' || ons[0] === 'liq' || (ons[0] === 'fric' && onset === 'r'));
+    let z1 = 0;
+    for (let i = 0; i < N; i++) {
+      const t = (off + i) / sr;
+      let phase, prog = 0;
+      if (i < onS) phase = 'c';
+      else if (i < onS + vS) { phase = 'v'; prog = (i - onS) / vS; }
+      else { phase = 'co'; prog = coS > 0 ? (i - onS - vS) / coS : 1; }
+      let f0 = 0;
+      if (phase === 'v') f0 = BASE * f0At(tone, prog);
+      else if (phase === 'co') f0 = BASE * f0At(tone, 1);
+      else f0 = voicedOns ? BASE * f0At(tone, 0) : 0;
+      let F1, F2, F3;
+      if (phase === 'c') { F1 = clsF[0]; F2 = clsF[1]; F3 = clsF[2]; }
+      else if (phase === 'v') {
+        const tp = trans > 0 ? Math.min(1, (i - onS) / trans) : 1;
+        const vf = formantsFor(fps[0]);
+        F1 = clsF[0] + (vf[0] - clsF[0]) * tp;
+        F2 = clsF[1] + (vf[1] - clsF[1]) * tp;
+        F3 = clsF[2] + (vf[2] - clsF[2]) * tp;
+      } else {
+        const nf = VOX_NAS[place] || [250, 1000, 2500];
+        const vf = formantsFor(fps[fps.length - 1]);
+        F1 = vf[0] * 0.35 + nf[0] * 0.65; F2 = vf[1] * 0.3 + nf[1] * 0.7; F3 = 2500;
+      }
+      let samp = 0;
+      if (f0 > 0) samp += vowelFrame((t * f0) * 2 * Math.PI, f0, F1, F2, F3);
+      if (phase === 'c' && ons) {
+        const white = Math.random() * 2 - 1;
+        z1 += (white - z1) * nAlpha;
+        const hp = white - z1;
+        const nv = z1 * 0.5 + hp * 0.9;
+        const cp = onS > 0 ? i / onS : 0;
+        let env;
+        if (ons[0] === 'stop') env = cp < 0.4 ? 0.55 : (ons[1] ? 0.25 * (1 - cp) : 0.0);  // 塞音爆破+送气
+        else if (ons[0] === 'fric' || ons[0] === 'aff') env = 0.32;                         // 擦/塞擦持续
+        else env = 0.30;
+        samp += nv * env;
+        if (voicedOns) {
+          const nf = ons[0] === 'nasal' ? (VOX_NAS[place] || [250, 900, 2500]) : [300, 1100, 2500];
+          samp += vowelFrame((t * f0) * 2 * Math.PI, f0, nf[0], nf[1], nf[2]) * 0.45;
+        }
+      }
+      if (phase === 'v') {
+        let vEnv = 1.0;
+        if (i - onS < aS) vEnv = (i - onS) / aS;
+        else if (onS + vS - i < rS) vEnv = (onS + vS - i) / rS;
+        vEnv = Math.max(0.3, vEnv);
+        samp *= (0.5 + 0.5 * vEnv);
+      } else if (phase === 'co') {
+        samp *= 0.6 * (1 - prog) + 0.15;
+      } else {
+        samp *= 0.85;
+      }
+      out[off + i] += samp;
+    }
+    return N;
+  }
   function synthName(ctx, pinyin) {
     if (!ctx) return;
+    const sr = ctx.sampleRate || 44100;
     const toks = pinyin.trim().split(/\s+/);
-    let t = ctx.currentTime + 0.02;
-    const BASE = 150;
+    const plans = [];
+    let totalN = Math.ceil(sr * 0.03);
     for (let ti = 0; ti < toks.length; ti++) {
       const tok = toks[ti];
       const tone = parseInt(tok[tok.length - 1], 10) || 5;
@@ -1715,67 +1840,34 @@
       const syl = splitSyllable(body);
       const fin = MFIN[syl.fin] || { p: ['a'] };
       const ons = syl.onset ? (MINIT[syl.onset] || ['stop', 0]) : null;
-      const onsetDur = ons ? 0.055 : 0.0;
-      const npts = fin.p.length;
-      const vowelDur = 0.15 + (npts - 1) * 0.07;
-      const codaDur = fin.c ? 0.07 : 0.0;
-      const total = onsetDur + vowelDur + codaDur;
-      // 声母段：噪声爆破 / 浊音鼻边音
+      const onDur = ons ? (ons[0] === 'fric' || ons[0] === 'aff' ? 0.09 : 0.05) : 0.0;
+      const vDur = 0.20 + (fin.p.length - 1) * 0.06;
+      const coDur = fin.c ? 0.08 : 0.0;
+      const place = syl.onset ? VOX_PLACE[syl.onset] : null;
+      let clsF = [320, 1500, 2500];
       if (ons) {
-        const place = MPLACE[syl.onset] || 2000;
-        const nb = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * onsetDur)), ctx.sampleRate);
-        const nd = nb.getChannelData(0);
-        for (let i = 0; i < nd.length; i++) nd[i] = (Math.random() * 2 - 1);
-        const ns = ctx.createBufferSource(); ns.buffer = nb;
-        const nf = ctx.createBiquadFilter(); nf.type = 'bandpass'; nf.frequency.value = place; nf.Q.value = 1.2;
-        const ng = ctx.createGain();
-        const voiced = (ons[0] === 'nasal' || ons[0] === 'liq');
-        ng.gain.setValueAtTime(voiced ? 0.10 : 0.16, t);
-        ng.gain.exponentialRampToValueAtTime(0.001, t + onsetDur);
-        ns.connect(nf); nf.connect(ng); ng.connect(ctx.destination);
-        ns.start(t); ns.stop(t + onsetDur);
-        if (voiced) {
-          const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = BASE * 0.6;
-          const og = ctx.createGain(); og.gain.setValueAtTime(0.08, t); og.gain.exponentialRampToValueAtTime(0.001, t + onsetDur);
-          const of = ctx.createBiquadFilter(); of.type = 'lowpass'; of.frequency.value = 500;
-          o.connect(of); of.connect(og); og.connect(ctx.destination); o.start(t); o.stop(t + onsetDur);
-        }
-      }
-      // 韵母段：声带锯齿源 + 三共振峰带通
-      const vt = t + onsetDur;
-      const src = ctx.createOscillator(); src.type = 'sawtooth';
-      const steps = 10;
-      for (let s = 0; s <= steps; s++) { const xx = s / steps; src.frequency.setValueAtTime(BASE * f0At(tone, xx), vt + vowelDur * xx); }
-      const master = ctx.createGain();
-      master.gain.setValueAtTime(0.0001, vt);
-      master.gain.exponentialRampToValueAtTime(0.20, vt + 0.012);
-      master.gain.setValueAtTime(0.20, vt + vowelDur - 0.03);
-      master.gain.exponentialRampToValueAtTime(0.001, vt + vowelDur);
-      const fp = fin.p;
-      for (let k = 0; k < 3; k++) {
-        const fb = ctx.createBiquadFilter(); fb.type = 'bandpass'; fb.Q.value = (k === 0 ? 8 : k === 1 ? 10 : 12);
-        const fg = ctx.createGain(); fg.gain.value = (k === 0 ? 1 : k === 1 ? 0.7 : 0.4);
-        for (let s = 0; s < fp.length; s++) {
-          const from = MVOW[fp[s]] ? MVOW[fp[s]][k] : MVOW.a[k];
-          const to = MVOW[fp[Math.min(s + 1, fp.length - 1)]] ? MVOW[fp[Math.min(s + 1, fp.length - 1)]][k] : MVOW.a[k];
-          const t0 = vt + vowelDur * (s / fp.length), t1 = vt + vowelDur * ((s + 1) / fp.length);
-          fb.frequency.setValueAtTime(from, t0);
-          fb.frequency.linearRampToValueAtTime(to, t1);
-        }
-        src.connect(fb); fb.connect(fg); fg.connect(master);
-      }
-      master.connect(ctx.destination);
-      src.start(vt); src.stop(vt + vowelDur);
-      // 鼻韵尾
-      if (fin.c) {
-        const ct = vt + vowelDur;
-        const co = ctx.createOscillator(); co.type = 'sawtooth'; co.frequency.value = BASE * f0At(tone, 1);
-        const cg = ctx.createGain(); cg.gain.setValueAtTime(0.14, ct); cg.gain.exponentialRampToValueAtTime(0.001, ct + codaDur);
-        const cf = ctx.createBiquadFilter(); cf.type = 'lowpass'; cf.frequency.value = fin.c === 'n' ? 900 : 600;
-        co.connect(cf); cf.connect(cg); cg.connect(ctx.destination); co.start(ct); co.stop(ct + codaDur);
-      }
-      t += total + 0.03;
+        if (ons[0] === 'nasal' || ons[0] === 'liq') clsF = (VOX_NAS[place] || [250, 1000, 2500]).slice();
+        else if (place) clsF = VOX_CLS[place].slice();
+      } else { clsF = formantsFor(fin.p[0]).slice(); }   // 零声母直接以元音共振峰起音
+      const N = Math.ceil(sr * (onDur + vDur + coDur));
+      plans.push({ onset: syl.onset, ons: ons, tone: tone, fps: fin.p, coda: fin.c, onDur: onDur, vDur: vDur, coDur: coDur, clsF: clsF, N: N });
+      totalN += N + Math.ceil(sr * VOX_GAP);
     }
+    const buf = ctx.createBuffer(1, totalN + Math.ceil(sr * 0.05), sr);
+    const out = buf.getChannelData(0);
+    let off = Math.ceil(sr * 0.02);
+    for (let i = 0; i < plans.length; i++) {
+      off += writeSyllable(out, off, sr, plans[i], VOX_BASE);
+      off += Math.ceil(sr * VOX_GAP);
+    }
+    // 归一化防爆音（保留峰值约 0.92）
+    let mx = 0;
+    for (let i = 0; i < out.length; i++) { const a = Math.abs(out[i]); if (a > mx) mx = a; }
+    if (mx > 0.001) { const g = 0.92 / mx; for (let i = 0; i < out.length; i++) out[i] *= g; }
+    const chain = getVoxChain(ctx);
+    const src = ctx.createBufferSource(); src.buffer = buf;
+    src.connect(chain.out);
+    src.start(ctx.currentTime + 0.01);
   }
   function vox(text) {
     if (!text) return;
